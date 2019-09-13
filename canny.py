@@ -1,4 +1,4 @@
 
 def do_canny(img):
-    # gaussian filtering here
+    # canny magic here
     return img

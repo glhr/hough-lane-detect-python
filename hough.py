@@ -1,4 +1,4 @@
 
 def do_hough(img):
-    # gaussian filtering here
+    # hough magic here
     return img
