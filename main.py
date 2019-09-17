@@ -19,7 +19,7 @@ img = img[250:,:]  # only keep bottom part of image
 blurred = do_gaussian(img) # implement function in gaussian.py
 blurred_cv = cv2.GaussianBlur(img, (5,5),1) # OpenCV built-in function, for testing only
 
-edges = do_canny(blurred_cv) # implement function in canny.py
+edges = do_canny(blurred) # implement function in canny.py
 edges_cv = cv2.Canny(blurred_cv, 50, 150) # OpenCV built-in function, for testing only
 
 detected_lines = do_hough(edges) # implement function in hough.py

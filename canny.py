@@ -12,7 +12,8 @@ def do_canny(img):
 
     gradient_mag, gradient_ang = calculate_gradients(img)
     nonmax = nonmaxsuppression(gradient_mag, gradient_ang)
-    thresh = thresholding(nonmax, 0.2, 0.28)
+    # thresh = thresholding(nonmax, 0.2, 0.28)
+    thresh = thresholding(nonmax, 0.12, 0.21)
     hyst, n = hysteresis(thresh)
 
     # for debugging
