@@ -27,7 +27,7 @@ detected_lines = do_hough(edges) # implement function in hough.py
 # plot results
 plt.subplot(221),plt.imshow(img, cmap='gray')
 plt.title('Original image'), plt.xticks([]), plt.yticks([])
-plt.subplot(222),plt.imshow(blurred_cv, cmap='gray')
+plt.subplot(222),plt.imshow(blurred, cmap='gray')
 plt.title('Blurred image (Gaussian filter OpenCV)'), plt.xticks([]), plt.yticks([])
 plt.subplot(223),plt.imshow(edges_cv, cmap='gray')
 plt.title('Canny edge detection (OpenCV)'), plt.xticks([]), plt.yticks([])

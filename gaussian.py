@@ -1,6 +1,5 @@
 import numpy as np
-import cv2
-import math
+
 
 def do_gaussian(src):
     # gaussian filtering here
@@ -10,7 +9,7 @@ def do_gaussian(src):
     height = src.shape[0]
     width = src.shape[1]
     sigma = 3
-    pi = 3.141592
+    pi = np.pi
     sum = 0 #for normalizing
 
     kernelSize = 5
@@ -20,7 +19,7 @@ def do_gaussian(src):
     #kernel
     for c in np.arange(0, kernelSize):
         for r in np.arange(0, kernelSize):
-         kernel[c][r] = math.exp(-0.5*(math.pow((c-kernelSize/2)/sigma, 2)+math.pow((r-kernelSize/2)/sigma, 2.0)))/(2*pi*sigma*sigma)
+         kernel[c][r] = np.exp(-0.5*(np.power((c-kernelSize/2)/sigma, 2)+np.power((r-kernelSize/2)/sigma, 2.0)))/(2*pi*sigma*sigma)
          sum = sum + kernel[c][r]
 
     #normalize kernel
@@ -28,6 +27,9 @@ def do_gaussian(src):
         for b in np.arange(0, kernelSize):
            kernel[a][b] = kernel[a][b]/sum
 
+    padded = np.pad(src, pad_width=2, mode='symmetric')
+    height = padded.shape[0]
+    width = padded.shape[1]
 
     #convolution
     for i in np.arange(2, height-2):
@@ -35,11 +37,11 @@ def do_gaussian(src):
             summ = 0
             for k in np.arange(-2, 3):
                 for l in np.arange(-2, 3):
-                    a = src.item(i+k, j+l) #access pixel values
+                    a = padded.item(i+k, j+l) #access pixel values
 
                     p = kernel[2+k, 2+l]
                     summ = summ + (p * a)
             b = summ
-            dst.itemset((i,j), summ) #change pixel value
+            dst.itemset((i-2,j-2), summ) #change pixel value
 
     return dst
