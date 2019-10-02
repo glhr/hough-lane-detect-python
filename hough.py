@@ -2,6 +2,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 
+def forceAspect(ax,aspect,h = None,w = None):
+    im = ax.get_images()
+    try:
+        extent = im[0].get_extent()
+    except IndexError:
+        extent = [h,0,w,0]
+    ax.set_aspect(abs((extent[1]-extent[0])/(extent[3]-extent[2]))/aspect)
+
 def do_hough(img):
 
     img = img[10:-10][10:-10] # ignore image boundaries
@@ -29,29 +37,8 @@ def do_hough(img):
 
                     accumulator[rho,theta_i] += 1  # increment accumulator for this coordinate pair
 
-    # find maximum point in accumulator
-
-    # result = np.where(accumulator == np.max(accumulator))
-    print("max. in accumulator:", np.max(accumulator))
-    # maxCoordinates = list(zip(result[0], result[1]))
-    # print(maxCoordinates)
-
-    max_index = np.argmax(accumulator) # 2d index of maximum point in accumulator
-    ang = thetas[np.uint64(max_index % accumulator.shape[1])]
-    rho = rhos[np.uint64(max_index / accumulator.shape[1])]
-
-    print(f"Hough coordinates: rho {rho:.2f}  theta(rad) {ang:.2f}  theta(deg) {np.rad2deg(ang)}")
 
     # Plotting
-
-    def forceAspect(ax,aspect,h = None,w = None):
-        im = ax.get_images()
-        try:
-            extent = im[0].get_extent()
-        except IndexError:
-            extent = [h,0,w,0]
-        ax.set_aspect(abs((extent[1]-extent[0])/(extent[3]-extent[2]))/aspect)
-
 
     fig = plt.figure()
 
@@ -67,19 +54,40 @@ def do_hough(img):
     ax_res.set_ylim(-h,h)
     ax_res.set_xlim(-w,w)
 
-    a = -(np.cos(ang)/np.sin(ang))
-    b = rho/np.sin(ang)
-
-    print(f"Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
-
-    x_vals = np.int64(np.array(ax_res.get_xlim()))
-    y_vals = np.int64(b + a * x_vals)
-
     img = cv2.cvtColor(np.float32(img),cv2.COLOR_GRAY2RGB)
 
-    cv2.line(img, (x_vals[0], y_vals[0]), (x_vals[-1], y_vals[-1]), (0,255,255), thickness=1)
-    ax_res.imshow(img)
+    for i in range(2):
+        # find maximum point in accumulator
 
+        # result = np.where(accumulator == np.max(accumulator))
+        print("max. in accumulator:", np.max(accumulator))
+        # maxCoordinates = list(zip(result[0], result[1]))
+        # print(maxCoordinates)
+
+        max_index = np.argmax(accumulator) # 2d index of maximum point in accumulator
+        theta_index = np.uint64(max_index % accumulator.shape[1])
+        rho_index = np.uint64(max_index / accumulator.shape[1])
+
+        ang = thetas[theta_index]
+        rho = rhos[rho_index]
+
+        print(f"Hough coordinates: rho {rho:.2f}  theta(rad) {ang:.2f}  theta(deg) {np.rad2deg(ang)}")
+
+        a = -(np.cos(ang)/np.sin(ang))
+        b = rho/np.sin(ang)
+
+        print(f"Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
+
+        x_vals = np.int64(np.array(ax_res.get_xlim()))
+        y_vals = np.int64(b + a * x_vals)
+
+
+
+        cv2.line(img, (x_vals[0], y_vals[0]), (x_vals[-1], y_vals[-1]), (0,255,255), thickness=1)
+
+        accumulator[rho_index][theta_index] = 0
+
+    ax_res.imshow(img)
     ax_res.invert_yaxis()
     plt.show()
 
