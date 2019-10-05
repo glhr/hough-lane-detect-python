@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 
+
 def forceAspect(ax,aspect,h = None,w = None):
     im = ax.get_images()
     try:
@@ -10,7 +11,8 @@ def forceAspect(ax,aspect,h = None,w = None):
         extent = [h,0,w,0]
     ax.set_aspect(abs((extent[1]-extent[0])/(extent[3]-extent[2]))/aspect)
 
-def do_hough(img):
+
+def do_hough_straightline(img):
 
     img = img[10:-10][10:-10] # ignore image boundaries
     print("-------------------------------------")
@@ -56,6 +58,8 @@ def do_hough(img):
 
     img = cv2.cvtColor(np.float32(img),cv2.COLOR_GRAY2RGB)
 
+    cv2.imwrite("accumulator.png",accumulator)
+
     for i in range(2):
         # find maximum point in accumulator
 
@@ -92,3 +96,8 @@ def do_hough(img):
     plt.show()
 
     return None
+
+
+def do_hough_curve(img):
+
+    return img
