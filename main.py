@@ -9,20 +9,28 @@ import cv2 # for testing only
 # local imports below
 from gaussian import do_gaussian
 from canny import do_canny
-from hough import do_hough_straightline
+from hough import do_hough_straightline, do_hough_curve
 
 # open test.jpg as grayscale array
-img = np.array(Image.open('curve.jpg').convert("L"))
+img = np.array(Image.open('test.jpg').convert("L"))
 
 img = img[250:,:]  # only keep bottom part of image
 
-blurred = do_gaussian(img) # implement function in gaussian.py
-blurred_cv = cv2.GaussianBlur(img, (5,5),1) # OpenCV built-in function, for testing only
+# downsample image
+small_to_large_image_size_ratio = 0.3
+img = cv2.resize(img,
+                   (0,0), # set fx and fy, not the final size
+                   fx=small_to_large_image_size_ratio,
+                   fy=small_to_large_image_size_ratio,
+                   interpolation=cv2.INTER_LINEAR)
 
-edges = do_canny(blurred) # implement function in canny.py
+blurred = do_gaussian(img) # implement function in gaussian.py
+blurred_cv = cv2.GaussianBlur(img, (3,3),0) # OpenCV built-in function, for testing only
+
+edges = do_canny(blurred_cv) # implement function in canny.py
 edges_cv = cv2.Canny(blurred_cv, 50, 150) # OpenCV built-in function, for testing only
 
-detected_lines = do_hough_straightline(edges) # implement function in hough.py
+detected_lines = do_hough_curve(edges) # implement function in hough.py
 
 # plot results
 plt.subplot(221),plt.imshow(img, cmap='gray')
