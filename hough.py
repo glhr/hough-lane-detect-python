@@ -24,6 +24,11 @@ def plot_accumulator(accumulator):
     ax.scatter(x.ravel(), y.ravel(), z.ravel(), c=accumulator.ravel());
     plt.show()
 
+def plot_line(a,b,ax_res):
+    x_vals = np.int64(np.array(ax_res.get_xlim()))
+    y_vals = np.int64(b + a * x_vals)
+    ax_res.plot(x_vals,y_vals,'k',color='firebrick',alpha=0.8)
+    return ax_res
 
 def plot_curve(img,k,beta,v,ax_img):
     h,w = img.shape
@@ -62,21 +67,24 @@ def do_hough_straightline(img):
 
     # Plotting
 
-    fig = plt.figure()
+    fig1 = plt.figure()
 
-    ax_img = fig.add_subplot(131) # original image
+    ax_acc = fig1.add_subplot(111) # accumulator
+    ax_acc.imshow(accumulator, cmap='gray')
+    forceAspect(ax_acc,0.5)
+
+    fig2 = plt.figure()
+
+    ax_img = fig2.add_subplot(211) # original image
     ax_img.imshow(img, cmap='gray')
 
-    ax_acc = fig.add_subplot(132) # accumulator
-    ax_acc.imshow(accumulator, cmap='gray')
-    forceAspect(ax_acc,2)
-
-    ax_res = fig.add_subplot(133) # estimated line
+    ax_res = fig2.add_subplot(212) # estimated line
 
     ax_res.set_ylim(-h,h)
     ax_res.set_xlim(-w,w)
 
-    img = cv2.cvtColor(np.float32(img),cv2.COLOR_GRAY2RGB)
+    # img = cv2.cvtColor(np.float32(img),cv2.COLOR_GRAY2RGB)
+    ax_res.imshow(np.flipud(img),cmap='gray',extent=[0, w, 0, h])
 
     cv2.imwrite("accumulator.png",accumulator)
 
@@ -102,17 +110,14 @@ def do_hough_straightline(img):
 
         print(f"Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
 
-        x_vals = np.int64(np.array(ax_res.get_xlim()))
-        y_vals = np.int64(b + a * x_vals)
-
-
-
-        cv2.line(img, (x_vals[0], y_vals[0]), (x_vals[-1], y_vals[-1]), (0,255,255), thickness=1)
+        plot_line(a,b,ax_res)
 
         accumulator[rho_index][theta_index] = 0
 
-    ax_res.imshow(img)
+    ax_res.set_ylim(0,h)
+    ax_res.set_xlim(0,w)
     ax_res.invert_yaxis()
+
     plt.show()
 
     return None
@@ -120,7 +125,7 @@ def do_hough_straightline(img):
 
 def do_hough_curve(img):
 
-    N_MAX = 4
+    N_MAX = 10
 
     print("-------------------------------------")
     img = np.flipud(img) # vertical flip
