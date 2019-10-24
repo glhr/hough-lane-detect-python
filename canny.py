@@ -1,6 +1,7 @@
 from scipy import signal, ndimage
 import numpy as np
 from PIL import Image
+import cv2
 
 from collections import namedtuple
 
@@ -12,8 +13,9 @@ def do_canny(img):
 
     gradient_mag, gradient_ang = calculate_gradients(img)
     nonmax = nonmaxsuppression(gradient_mag, gradient_ang)
-    # thresh = thresholding(nonmax, 0.2, 0.28)
-    thresh = thresholding(nonmax, 0.12, 0.21)
+    # thresh = thresholding(nonmax, 0.2, 0.3)
+
+    thresh = thresholding(nonmax, 50, 80)
     hyst, n = hysteresis(thresh)
 
     # for debugging
@@ -60,7 +62,7 @@ def calculate_gradients(img):
     edges_y = ndimage.convolve(img, kernel_y, mode='reflect')
 
     gradient_mag = np.hypot(edges_x, edges_y)
-    gradient_mag *= 255/np.max(gradient_mag) # normalize values into range (0,255)
+    gradient_mag = cv2.normalize(gradient_mag, None, 0, 255, cv2.NORM_MINMAX)
 
     gradient_ang = np.arctan2(edges_y, edges_x)
 

@@ -12,7 +12,8 @@ from canny import do_canny
 from hough import do_hough_straightline, do_hough_curve
 
 # open test.jpg as grayscale array
-img = np.array(Image.open('cam_data/test2019-10-07.14_59_18.jpg').convert("L"))
+img = np.array(Image.open('cam_data/ircam1571825253562129359.png').convert("L"))
+#img = np.array(Image.open('canny_output/cannylane_test.jpg').convert("L"))
 
 img = img[250:,:]  # only keep bottom part of image
 
@@ -25,7 +26,7 @@ img = cv2.resize(img,
                    interpolation=cv2.INTER_LINEAR)
 
 blurred = do_gaussian(img) # implement function in gaussian.py
-blurred_cv = cv2.GaussianBlur(img, (5,5),0) # OpenCV built-in function, for testing only
+blurred_cv = cv2.GaussianBlur(img, (3,3),0) # OpenCV built-in function, for testing only
 
 edges = do_canny(blurred_cv) # implement function in canny.py
 edges_cv = cv2.Canny(blurred_cv, 50, 150) # OpenCV built-in function, for testing only

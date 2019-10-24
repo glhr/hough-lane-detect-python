@@ -39,7 +39,7 @@ def plot_curve(img,k,beta,v,ax_img):
 
 def do_hough_straightline(img):
 
-    img = img[10:-10][10:-10] # ignore image boundaries
+    #img = img[10:-10][10:-10] # ignore image boundaries
     print("-------------------------------------")
 
     h,w = img.shape
@@ -61,8 +61,8 @@ def do_hough_straightline(img):
                     rho = np.round(j * np.cos(theta) + i * np.sin(theta)) + diag
                     # print("point",(i,j),"rho",rho,"theta",theta)
                     rho = np.uint64(rho)
-
-                    accumulator[rho,theta_i] += 1  # increment accumulator for this coordinate pair
+                    if (theta < np.deg2rad(-20) and theta > np.deg2rad(-70)) or (theta > np.deg2rad(20) and theta < np.deg2rad(70)):
+                        accumulator[rho,theta_i] += 1  # increment accumulator for this coordinate pair
 
 
     # Plotting
@@ -86,7 +86,7 @@ def do_hough_straightline(img):
     # img = cv2.cvtColor(np.float32(img),cv2.COLOR_GRAY2RGB)
     ax_res.imshow(np.flipud(img),cmap='gray',extent=[0, w, 0, h])
 
-    cv2.imwrite("accumulator.png",accumulator)
+
 
     for i in range(2):
         # find maximum point in accumulator
@@ -112,7 +112,12 @@ def do_hough_straightline(img):
 
         plot_line(a,b,ax_res)
 
-        accumulator[rho_index][theta_index] = 0
+        remove_area = 15
+        #accumulator[np.int(rho_index-remove_area):np.int(rho_index+remove_area),np.int(theta_index-remove_area):np.int(theta_index+remove_area)] = 0
+        for i in range(np.int(rho_index-remove_area),np.int(rho_index+remove_area+1)):
+            accumulator[i][np.int(theta_index-remove_area):np.int(theta_index+remove_area)] = 0
+
+    cv2.imwrite("accumulator.png",accumulator)
 
     ax_res.set_ylim(0,h)
     ax_res.set_xlim(0,w)
