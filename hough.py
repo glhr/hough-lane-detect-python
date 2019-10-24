@@ -112,8 +112,7 @@ def do_hough_straightline(img):
 
         plot_line(a,b,ax_res)
 
-        remove_area = 15
-        #accumulator[np.int(rho_index-remove_area):np.int(rho_index+remove_area),np.int(theta_index-remove_area):np.int(theta_index+remove_area)] = 0
+        remove_area = 20
         for i in range(np.int(rho_index-remove_area),np.int(rho_index+remove_area+1)):
             accumulator[i][np.int(theta_index-remove_area):np.int(theta_index+remove_area)] = 0
 

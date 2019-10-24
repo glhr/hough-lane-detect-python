@@ -18,7 +18,9 @@ img = np.array(Image.open('cam_data/ircam1571825253562129359.png').convert("L"))
 img = img[250:,:]  # only keep bottom part of image
 
 # downsample image
-small_to_large_image_size_ratio = 0.3
+h,w = img.shape[:2]
+desired_w = 240
+small_to_large_image_size_ratio = desired_w/w
 img = cv2.resize(img,
                    (0,0), # set fx and fy, not the final size
                    fx=small_to_large_image_size_ratio,
