@@ -8,14 +8,14 @@ from collections import namedtuple
 import matplotlib.pyplot as plt
 
 
-def do_canny(img, plot=False):
+def do_canny(img, low, high, plot=False):
     print(" === CANNY === ")
 
     gradient_mag, gradient_ang = calculate_gradients(img)
     nonmax = nonmaxsuppression(gradient_mag, gradient_ang)
     # thresh = thresholding(nonmax, 0.2, 0.3)
 
-    thresh = thresholding(nonmax, 50, 80)
+    thresh = thresholding(nonmax, low, high)
     hyst, n = hysteresis(thresh)
 
     # for debugging

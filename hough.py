@@ -37,7 +37,7 @@ def plot_curve(img,k,beta,v,ax_img):
     ax_img.plot(x_vals,y_vals,'k',color='firebrick',alpha=0.5)
     return ax_img
 
-def do_hough_straightline(img,plot=False):
+def do_hough_straightline(img,n_lines,max_area,plot=False):
 
     #img = img[10:-10][10:-10] # ignore image boundaries
     print("-------------------------------------")
@@ -61,7 +61,7 @@ def do_hough_straightline(img,plot=False):
                     rho = np.round(j * np.cos(theta) + i * np.sin(theta)) + diag
                     # print("point",(i,j),"rho",rho,"theta",theta)
                     rho = np.uint64(rho)
-                    if (theta < np.deg2rad(-20) and theta > np.deg2rad(-70)) or (theta > np.deg2rad(20) and theta < np.deg2rad(70)):
+                    if (theta < np.deg2rad(-20) and theta > np.deg2rad(-65)) or (theta > np.deg2rad(20) and theta < np.deg2rad(65)):
                         accumulator[rho,theta_i] += 1  # increment accumulator for this coordinate pair
 
 
@@ -76,10 +76,10 @@ def do_hough_straightline(img,plot=False):
 
     fig2 = plt.figure()
 
-    ax_img = fig2.add_subplot(121) # original image
+    ax_img = fig2.add_subplot(211) # original image
     ax_img.imshow(img, cmap='gray')
 
-    ax_res = fig2.add_subplot(122) # estimated line
+    ax_res = fig2.add_subplot(212) # estimated line
 
     ax_res.set_ylim(-h,h)
     ax_res.set_xlim(-w,w)
@@ -87,7 +87,7 @@ def do_hough_straightline(img,plot=False):
     # img = cv2.cvtColor(np.float32(img),cv2.COLOR_GRAY2RGB)
     ax_res.imshow(np.flipud(img),cmap='gray',extent=[0, w, 0, h])
 
-    for i in range(2):
+    for i in range(n_lines):
         # find maximum point in accumulator
 
         # result = np.where(accumulator == np.max(accumulator))
@@ -111,7 +111,7 @@ def do_hough_straightline(img,plot=False):
 
         plot_line(a,b,ax_res)
 
-        remove_area = 20
+        remove_area = max_area
         for i in range(np.int(rho_index-remove_area),np.int(rho_index+remove_area+1)):
             accumulator[i][np.int(theta_index-remove_area):np.int(theta_index+remove_area)] = 0
 
