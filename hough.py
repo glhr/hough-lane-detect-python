@@ -37,7 +37,7 @@ def plot_curve(img,k,beta,v,ax_img):
     ax_img.plot(x_vals,y_vals,'k',color='firebrick',alpha=0.5)
     return ax_img
 
-def do_hough_straightline(img):
+def do_hough_straightline(img,plot=False):
 
     #img = img[10:-10][10:-10] # ignore image boundaries
     print("-------------------------------------")
@@ -67,26 +67,25 @@ def do_hough_straightline(img):
 
     # Plotting
 
-    fig1 = plt.figure()
+    if plot:
+        fig1 = plt.figure()
 
-    ax_acc = fig1.add_subplot(111) # accumulator
-    ax_acc.imshow(accumulator, cmap='gray')
-    forceAspect(ax_acc,0.5)
+        ax_acc = fig1.add_subplot(111) # accumulator
+        ax_acc.imshow(accumulator, cmap='gray')
+        forceAspect(ax_acc,0.5)
 
     fig2 = plt.figure()
 
-    ax_img = fig2.add_subplot(211) # original image
+    ax_img = fig2.add_subplot(121) # original image
     ax_img.imshow(img, cmap='gray')
 
-    ax_res = fig2.add_subplot(212) # estimated line
+    ax_res = fig2.add_subplot(122) # estimated line
 
     ax_res.set_ylim(-h,h)
     ax_res.set_xlim(-w,w)
 
     # img = cv2.cvtColor(np.float32(img),cv2.COLOR_GRAY2RGB)
     ax_res.imshow(np.flipud(img),cmap='gray',extent=[0, w, 0, h])
-
-
 
     for i in range(2):
         # find maximum point in accumulator
@@ -116,15 +115,15 @@ def do_hough_straightline(img):
         for i in range(np.int(rho_index-remove_area),np.int(rho_index+remove_area+1)):
             accumulator[i][np.int(theta_index-remove_area):np.int(theta_index+remove_area)] = 0
 
-    cv2.imwrite("accumulator.png",accumulator)
-
     ax_res.set_ylim(0,h)
     ax_res.set_xlim(0,w)
     ax_res.invert_yaxis()
 
-    plt.show()
+    if plot:
+        cv2.imwrite("accumulator.png",accumulator)
+        plt.show()
 
-    return None
+    return fig2
 
 
 def do_hough_curve(img):

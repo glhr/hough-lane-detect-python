@@ -11,8 +11,11 @@ from gaussian import do_gaussian
 from canny import do_canny
 from hough import do_hough_straightline, do_hough_curve
 
+PLOT_INTERMEDIARY = False
+PLOT_RESULTS = True
+
 # open test.jpg as grayscale array
-img = np.array(Image.open('cam_data/ircam1571825253562129359.png').convert("L"))
+img = np.array(Image.open('cam_data/ir/ircam1571825253562129359.png').convert("L"))
 #img = np.array(Image.open('canny_output/cannylane_test.jpg').convert("L"))
 
 img = img[250:,:]  # only keep bottom part of image
@@ -30,18 +33,25 @@ img = cv2.resize(img,
 blurred = do_gaussian(img) # implement function in gaussian.py
 blurred_cv = cv2.GaussianBlur(img, (3,3),0) # OpenCV built-in function, for testing only
 
-edges = do_canny(blurred_cv) # implement function in canny.py
+edges = do_canny(blurred_cv, plot=PLOT_INTERMEDIARY) # implement function in canny.py
 edges_cv = cv2.Canny(blurred_cv, 50, 150) # OpenCV built-in function, for testing only
 
-detected_lines = do_hough_straightline(edges) # implement function in hough.py
+fig = do_hough_straightline(edges,plot=PLOT_INTERMEDIARY) # implement function in hough.py
 
-# plot results
-plt.subplot(221),plt.imshow(img, cmap='gray')
-plt.title('Original image'), plt.xticks([]), plt.yticks([])
-plt.subplot(222),plt.imshow(blurred, cmap='gray')
-plt.title('Blurred image (Gaussian filter OpenCV)'), plt.xticks([]), plt.yticks([])
-plt.subplot(223),plt.imshow(edges_cv, cmap='gray')
-plt.title('Canny edge detection (OpenCV)'), plt.xticks([]), plt.yticks([])
-plt.subplot(224),plt.imshow(edges, cmap='gray')
-plt.title('Canny edge detection (homemade)'), plt.xticks([]), plt.yticks([])
-plt.show()
+if PLOT_INTERMEDIARY:
+    # plot results
+    plt.subplot(221),plt.imshow(img, cmap='gray')
+    plt.title('Original image'), plt.xticks([]), plt.yticks([])
+    plt.subplot(222),plt.imshow(blurred, cmap='gray')
+    plt.title('Blurred image (Gaussian filter OpenCV)'), plt.xticks([]), plt.yticks([])
+    plt.subplot(223),plt.imshow(edges_cv, cmap='gray')
+    plt.title('Canny edge detection (OpenCV)'), plt.xticks([]), plt.yticks([])
+    plt.subplot(224),plt.imshow(edges, cmap='gray')
+    plt.title('Canny edge detection (homemade)'), plt.xticks([]), plt.yticks([])
+    plt.show()
+
+if PLOT_RESULTS:
+    # plot results
+    ax_img = fig.add_subplot(121)
+    ax_img.imshow(img, cmap='gray')
+    plt.show()

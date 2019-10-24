@@ -8,7 +8,7 @@ from collections import namedtuple
 import matplotlib.pyplot as plt
 
 
-def do_canny(img):
+def do_canny(img, plot=False):
     print(" === CANNY === ")
 
     gradient_mag, gradient_ang = calculate_gradients(img)
@@ -22,30 +22,31 @@ def do_canny(img):
     print("Double thresholding - found",np.count_nonzero(thresh == 100),"weak &",np.count_nonzero(thresh == 255),"strong edges")
     print("Hysteresis - Turned",n,"weak edges into strong edges")
 
-    # plot results
-    plt.subplot(321),plt.imshow(img, cmap='gray')
-    plt.title('Blurred image'), plt.xticks([]), plt.yticks([])
+    if plot:
+        # plot results
+        plt.subplot(321),plt.imshow(img, cmap='gray')
+        plt.title('Blurred image'), plt.xticks([]), plt.yticks([])
 
-    plt.subplot(322),plt.imshow(gradient_mag, cmap='gray')
-    plt.title('Gradient magnitude'), plt.xticks([]), plt.yticks([])
-    # plt.subplot(244),plt.hist(gradient_mag)
-    save_array_as_img(gradient_mag, "gradient_mag")
+        plt.subplot(322),plt.imshow(gradient_mag, cmap='gray')
+        plt.title('Gradient magnitude'), plt.xticks([]), plt.yticks([])
+        # plt.subplot(244),plt.hist(gradient_mag)
+        save_array_as_img(gradient_mag, "gradient_mag")
 
-    plt.subplot(323),plt.imshow(nonmax, cmap='gray')
-    plt.title('After non-maximum suppression'), plt.xticks([]), plt.yticks([])
-    # plt.subplot(246),plt.hist(nonmax)
-    save_array_as_img(nonmax, "nonmax")
+        plt.subplot(323),plt.imshow(nonmax, cmap='gray')
+        plt.title('After non-maximum suppression'), plt.xticks([]), plt.yticks([])
+        # plt.subplot(246),plt.hist(nonmax)
+        save_array_as_img(nonmax, "nonmax")
 
-    plt.subplot(324),plt.imshow(thresh, cmap='gray')
-    plt.title('After double thresholding'), plt.xticks([]), plt.yticks([])
-    # plt.subplot(248),plt.hist(thresh)
-    save_array_as_img(thresh, "thresh")
+        plt.subplot(324),plt.imshow(thresh, cmap='gray')
+        plt.title('After double thresholding'), plt.xticks([]), plt.yticks([])
+        # plt.subplot(248),plt.hist(thresh)
+        save_array_as_img(thresh, "thresh")
 
-    plt.subplot(325),plt.imshow(hyst, cmap='gray')
-    plt.title('After hysterisis (edge tracking)'), plt.xticks([]), plt.yticks([])
-    save_array_as_img(hyst, "hyst")
+        plt.subplot(325),plt.imshow(hyst, cmap='gray')
+        plt.title('After hysterisis (edge tracking)'), plt.xticks([]), plt.yticks([])
+        save_array_as_img(hyst, "hyst")
 
-    plt.show()
+        plt.show()
 
     return hyst
 
