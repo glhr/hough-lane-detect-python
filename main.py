@@ -16,9 +16,9 @@ PLOT_RESULTS = True
 
 GAUSSIAN_SIZE = 5
 CANNY_LOW = 20
-CANNY_HIGH = 40
+CANNY_HIGH = 30
 ACCUMULATOR_MAX_AREA = 30
-N_LINES = 3
+N_LINES = 2
 
 def detect_lane(img_path):
     # open image in grayscale
@@ -37,10 +37,10 @@ def detect_lane(img_path):
                        fy=small_to_large_image_size_ratio,
                        interpolation=cv2.INTER_LINEAR)
 
-    blurred = do_gaussian(img) # implement function in gaussian.py
+    # blurred = do_gaussian(img) # implement function in gaussian.py
     blurred_cv = cv2.GaussianBlur(img, (GAUSSIAN_SIZE,GAUSSIAN_SIZE),0) # OpenCV built-in function, for testing only
 
-    edges = do_canny(blurred_cv, CANNY_LOW, CANNY_HIGH, plot=PLOT_INTERMEDIARY) # implement function in canny.py
+    # edges = do_canny(blurred_cv, CANNY_LOW, CANNY_HIGH, plot=PLOT_INTERMEDIARY) # implement function in canny.py
     edges_cv = cv2.Canny(blurred_cv, CANNY_LOW, CANNY_HIGH) # OpenCV built-in function, for testing only
 
     fig = do_hough_straightline(edges_cv,N_LINES,ACCUMULATOR_MAX_AREA,plot=PLOT_INTERMEDIARY) # implement function in hough.py
@@ -65,7 +65,8 @@ def detect_lane(img_path):
         #plt.show()
 
 
-for path in glob.iglob('cam_data/ir/imgs/*.png'):
+for path in glob.iglob('cam_data/ir/*.png'):
     detect_lane(path)
 
-detect_lane('canny_output/cannylane_test.jpg')
+# detect_lane('canny_output/cannylane_test.jpg')
+#detect_lane('cam_data/ir/ircam1571746678401506290.png')

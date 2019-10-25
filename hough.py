@@ -87,9 +87,10 @@ def do_hough_straightline(img,n_lines,max_area,plot=False):
     # img = cv2.cvtColor(np.float32(img),cv2.COLOR_GRAY2RGB)
     ax_res.imshow(np.flipud(img),cmap='gray',extent=[0, w, 0, h])
 
-    for i in range(n_lines):
-        # find maximum point in accumulator
+    n = 1
+    while n <= n_lines:
 
+        # find maximum point in accumulator
         # result = np.where(accumulator == np.max(accumulator))
         print("max. in accumulator:", np.max(accumulator))
         # maxCoordinates = list(zip(result[0], result[1]))
@@ -104,12 +105,26 @@ def do_hough_straightline(img,n_lines,max_area,plot=False):
 
         print(f"Hough coordinates: rho {rho:.2f}  theta(rad) {ang:.2f}  theta(deg) {np.rad2deg(ang)}")
 
-        a = -(np.cos(ang)/np.sin(ang))
-        b = rho/np.sin(ang)
+        if n == 1:
+            lane1_pos = (ang > 0)
+            a = -(np.cos(ang)/np.sin(ang))
+            b = rho/np.sin(ang)
+            print(f"Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
+            plot_line(a,b,ax_res)
+            n += 1
+        elif n == 2:
+            lane2_pos = (ang > 0)
+            if lane1_pos != lane2_pos or (ang == prev_ang and rho == prev_rho):
+                a = -(np.cos(ang)/np.sin(ang))
+                b = rho/np.sin(ang)
+                print(f"Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
+                plot_line(a,b,ax_res)
+                n += 1
 
-        print(f"Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
+        prev_ang = ang
+        prev_rho = rho
 
-        plot_line(a,b,ax_res)
+
 
         remove_area = max_area
         for i in range(np.int(rho_index-remove_area),np.int(rho_index+remove_area+1)):
