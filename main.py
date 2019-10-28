@@ -29,7 +29,7 @@ def detect_lane(img_path):
 
     # downsample image
     h,w = img.shape[:2]
-    desired_w = 240
+    desired_w = 250
     small_to_large_image_size_ratio = desired_w/w
     img = cv2.resize(img,
                        (0,0), # set fx and fy, not the final size
