@@ -11,12 +11,12 @@ from gaussian import do_gaussian
 from canny import do_canny
 from hough import do_hough_straightline, do_hough_curve
 
-PLOT_INTERMEDIARY = False
+PLOT_INTERMEDIARY = True
 PLOT_RESULTS = True
 
 GAUSSIAN_SIZE = 5
-CANNY_LOW = 20
-CANNY_HIGH = 30
+CANNY_LOW = 15
+CANNY_HIGH = 25
 ACCUMULATOR_MAX_AREA = 30
 N_LINES = 2
 
@@ -40,12 +40,13 @@ def detect_lane(img_path):
     cv2.imwrite('gaussian_output/input_'+img_path.split('\\')[-1].split('/')[-1],img)
     blurred = do_gaussian(img) # implement function in gaussian.py
     cv2.imwrite('gaussian_output/output_'+img_path.split('\\')[-1].split('/')[-1],blurred)
-    #blurred_cv = cv2.GaussianBlur(img, (GAUSSIAN_SIZE,GAUSSIAN_SIZE),0) # OpenCV built-in function, for testing only
+    
+    blurred_cv = cv2.GaussianBlur(img, (GAUSSIAN_SIZE,GAUSSIAN_SIZE),0) # OpenCV built-in function, for testing only
 
-    # edges = do_canny(blurred_cv, CANNY_LOW, CANNY_HIGH, plot=PLOT_INTERMEDIARY) # implement function in canny.py
+    edges = do_canny(blurred, CANNY_LOW, CANNY_HIGH, plot=PLOT_INTERMEDIARY) # implement function in canny.py
     edges_cv = cv2.Canny(blurred, CANNY_LOW, CANNY_HIGH) # OpenCV built-in function, for testing only
 
-    fig = do_hough_straightline(edges_cv,N_LINES,ACCUMULATOR_MAX_AREA,plot=PLOT_INTERMEDIARY) # implement function in hough.py
+    fig = do_hough_straightline(edges,N_LINES,ACCUMULATOR_MAX_AREA,plot=PLOT_INTERMEDIARY) # implement function in hough.py
 
     if PLOT_INTERMEDIARY:
         # plot results
