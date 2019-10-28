@@ -37,10 +37,14 @@ def plot_curve(img,k,beta,v,ax_img):
     ax_img.plot(x_vals,y_vals,'k',color='firebrick',alpha=0.5)
     return ax_img
 
+def is_theta_in_range(theta):
+	return (theta < np.deg2rad(-20) and theta > np.deg2rad(-65)) or (theta > np.deg2rad(20) and theta < np.deg2rad(65))
+
 def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
 
     #img = img[10:-10][10:-10] # ignore image boundaries
     #print("-------------------------------------")
+    max_iterations = 5
 
     h,w = img.shape
     middle = w/2
@@ -62,7 +66,7 @@ def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
                     rho = np.round(j * np.cos(theta) + i * np.sin(theta)) + diag
                     # print("point",(i,j),"rho",rho,"theta",theta)
                     rho = np.uint64(rho)
-                    if (theta < np.deg2rad(-20) and theta > np.deg2rad(-65)) or (theta > np.deg2rad(20) and theta < np.deg2rad(65)):
+                    if is_theta_in_range(theta):
                         accumulator[rho,theta_i] += 1  # increment accumulator for this coordinate pair
 
 
@@ -90,8 +94,9 @@ def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
     ax_img.imshow(np.flipud(orig),cmap='gray',extent=[0, w, 0, h])
 
     n = 1
-    while n <= n_lines:
-
+    iterations = 0
+    while n <= n_lines and iterations < max_iterations:
+        print(iterations)
         # find maximum point in accumulator
         # result = np.where(accumulator == np.max(accumulator))
         #print("max. in accumulator:", np.max(accumulator))
@@ -106,7 +111,8 @@ def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
         rho = rhos[rho_index]
 
         #print(f"Hough coordinates: rho {rho:.2f}  theta(rad) {ang:.2f}  theta(deg) {np.rad2deg(ang)}")
-
+	
+        
         if n == 1:
             lane1_pos = (ang > 0)
             a = -(np.cos(ang)/np.sin(ang))
@@ -124,7 +130,7 @@ def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
             b = rho/np.sin(ang)
             start = ((h-1) - b)/a
             lane2_start = (start < middle)
-            if (lane1_start != lane2_start ) or (ang == prev_ang and rho == prev_rho):
+            if (lane1_start != lane2_start):
                 print(f"- Lane 2: Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
                 print(f"\t starting at y = ", start)
                 plot_line(a,b,ax_res,color='blue')
@@ -137,6 +143,8 @@ def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
         remove_area = max_area
         for i in range(np.int(rho_index-remove_area),np.int(rho_index+remove_area+1)):
             accumulator[i][np.int(theta_index-remove_area):np.int(theta_index+remove_area)] = 0
+        
+        iterations += 1
 
     ax_res.set_ylim(0,h)
     ax_res.set_xlim(0,w)
