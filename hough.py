@@ -47,6 +47,7 @@ def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
     max_iterations = 5
 
     h,w = img.shape
+    h_orig,w_orig = orig.shape
     middle = w/2
     diag = np.ceil(np.hypot(h,w))
     #print(f"IMG dimensions: {img.shape} max. intensity: {np.max(img)}")
@@ -82,8 +83,8 @@ def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
     fig2 = plt.figure()
 
     ax_img = fig2.add_subplot(211) # original image
-    ax_img.set_ylim(-h,h)
-    ax_img.set_xlim(-w,w)
+    ax_img.set_ylim(-h_orig,h_orig)
+    ax_img.set_xlim(-w_orig,w_orig)
 
     ax_res = fig2.add_subplot(212) # estimated line
     ax_res.set_ylim(-h,h)
@@ -91,7 +92,7 @@ def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
 
     # img = cv2.cvtColor(np.float32(img),cv2.COLOR_GRAY2RGB)
     ax_res.imshow(np.flipud(img),cmap='gray',extent=[0, w, 0, h])
-    ax_img.imshow(np.flipud(orig),cmap='gray',extent=[0, w, 0, h])
+    ax_img.imshow(np.flipud(orig),cmap='gray',extent=[0, w_orig, 0, h_orig])
 
     n = 1
     iterations = 0
@@ -117,10 +118,11 @@ def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
             lane1_pos = (ang > 0)
             a = -(np.cos(ang)/np.sin(ang))
             b = rho/np.sin(ang)
-            start = ((h-1) - b)/a
-            lane1_start = (start < middle)
+            lane1_start = ((h-1) - b)/a
+            lane1_end = -b/a
+            lane1_side = (lane1_start < middle)
             print(f"- Lane 1: Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
-            print(f"\t starting at y = ", start)
+            print(f"\t starting at y = ", lane1_start)
             plot_line(a,b,ax_res,color='red')
             plot_line(a,b,ax_img,opacity=0.3,color='red')
             n += 1
@@ -128,11 +130,12 @@ def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
             lane2_pos = (ang > 0)
             a = -(np.cos(ang)/np.sin(ang))
             b = rho/np.sin(ang)
-            start = ((h-1) - b)/a
-            lane2_start = (start < middle)
-            if (lane1_start != lane2_start):
+            lane2_start = ((h-1) - b)/a
+            lane2_end = -b/a
+            lane2_side = (lane2_start < middle)
+            if (lane1_side != lane2_side) and ((lane2_end > lane1_end and lane2_start > lane1_start) or (lane2_end < lane1_end and lane2_start < lane1_start)):
                 print(f"- Lane 2: Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
-                print(f"\t starting at y = ", start)
+                print(f"\t starting at y = ", lane2_start)
                 plot_line(a,b,ax_res,color='blue')
                 plot_line(a,b,ax_img,opacity=0.3,color='blue')
                 n += 1
@@ -150,8 +153,8 @@ def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
     ax_res.set_xlim(0,w)
     ax_res.invert_yaxis()
 
-    ax_img.set_ylim(0,h)
-    ax_img.set_xlim(0,w)
+    ax_img.set_ylim(0,h_orig)
+    ax_img.set_xlim(0,w_orig)
     ax_img.invert_yaxis()
 
     if plot:

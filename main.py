@@ -23,10 +23,10 @@ N_LINES = 2
 def detect_lane(img_path):
     print('-->',img_path)
     # open image in grayscale
-    img = np.array(Image.open(img_path).convert("L"))
+    orig_img = np.array(Image.open(img_path).convert("L"))
 
     # only keep bottom part of image
-    img = img[220:,:]
+    img = orig_img[220:,:]
 
     # downsample image
     h,w = img.shape[:2]
