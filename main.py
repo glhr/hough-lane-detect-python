@@ -37,11 +37,13 @@ def detect_lane(img_path):
                        fy=small_to_large_image_size_ratio,
                        interpolation=cv2.INTER_LINEAR)
 
-    # blurred = do_gaussian(img) # implement function in gaussian.py
-    blurred_cv = cv2.GaussianBlur(img, (GAUSSIAN_SIZE,GAUSSIAN_SIZE),0) # OpenCV built-in function, for testing only
+    cv2.imwrite('gaussian_output/input_'+img_path.split('\\')[-1].split('/')[-1],img)
+    blurred = do_gaussian(img) # implement function in gaussian.py
+    cv2.imwrite('gaussian_output/output_'+img_path.split('\\')[-1].split('/')[-1],blurred)
+    #blurred_cv = cv2.GaussianBlur(img, (GAUSSIAN_SIZE,GAUSSIAN_SIZE),0) # OpenCV built-in function, for testing only
 
     # edges = do_canny(blurred_cv, CANNY_LOW, CANNY_HIGH, plot=PLOT_INTERMEDIARY) # implement function in canny.py
-    edges_cv = cv2.Canny(blurred_cv, CANNY_LOW, CANNY_HIGH) # OpenCV built-in function, for testing only
+    edges_cv = cv2.Canny(blurred, CANNY_LOW, CANNY_HIGH) # OpenCV built-in function, for testing only
 
     fig = do_hough_straightline(edges_cv,N_LINES,ACCUMULATOR_MAX_AREA,plot=PLOT_INTERMEDIARY) # implement function in hough.py
 
