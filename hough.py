@@ -64,12 +64,11 @@ def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
             if img[i,j] > 0:  # if we're on an edge
                 for theta_i in range(len(thetas)): # calculate rho for every theta
                     theta = thetas[theta_i]
-                    rho = np.round(j * np.cos(theta) + i * np.sin(theta)) + diag
-                    # print("point",(i,j),"rho",rho,"theta",theta)
-                    rho = np.uint64(rho)
                     if is_theta_in_range(theta):
+                        rho = np.round(j * np.cos(theta) + i * np.sin(theta)) + diag
+                        # print("point",(i,j),"rho",rho,"theta",theta)
+                        rho = np.uint64(rho)
                         accumulator[rho,theta_i] += 1  # increment accumulator for this coordinate pair
-
 
     # Plotting
 
