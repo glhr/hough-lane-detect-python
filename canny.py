@@ -12,8 +12,12 @@ def do_canny(img, low, high, plot=False):
     print(" === CANNY === ")
 
     gradient_mag, gradient_ang = calculate_gradients(img)
+
     nonmax = nonmaxsuppression(gradient_mag, gradient_ang)
     # thresh = thresholding(nonmax, 0.2, 0.3)
+
+    low = np.int(np.mean(nonmax)*1.5)
+    high = np.int(low * 3)
 
     thresh = thresholding(nonmax, low, high)
     hyst, n = hysteresis(thresh)
@@ -59,8 +63,8 @@ def calculate_gradients(img):
     kernel_y = np.array([[1, 2, 1],
                          [0, 0, 0],
                          [-1, -2, -1]], np.float32)
-    edges_x = ndimage.convolve(img, kernel_x, mode='reflect')
-    edges_y = ndimage.convolve(img, kernel_y, mode='reflect')
+    edges_x = ndimage.convolve(img, kernel_x, mode='nearest')
+    edges_y = ndimage.convolve(img, kernel_y, mode='nearest')
 
     gradient_mag = np.hypot(edges_x, edges_y)
     gradient_mag = cv2.normalize(gradient_mag, None, 0, 255, cv2.NORM_MINMAX)
@@ -73,7 +77,7 @@ def calculate_gradients(img):
 def nonmaxsuppression(gradient_mag, gradient_ang):
 
     out = np.zeros_like(gradient_mag, dtype=np.int32) # initialize output array
-    gradient_ang = gradient_ang * 180 / np.pi  # convert angles from radians to degress
+    gradient_ang = gradient_ang * 180 / np.pi  # convert angles from radians to degrees
     gradient_ang[gradient_ang < 0] += 180  # only keep direction not orientation
 
     range_tuple = namedtuple('range_tuple', 'low high')
@@ -100,8 +104,9 @@ def nonmaxsuppression(gradient_mag, gradient_ang):
                                   gradient_mag[y, x+1])
 
                 elif ranges[90].low <= ang < ranges[90].high:
-                    neighbours = (gradient_mag[y+1, x],
-                                  gradient_mag[y-1, x])
+                    # neighbours = (gradient_mag[y+1, x],
+                    #              gradient_mag[y-1, x])
+                    neighbours = (255,255) # discard horizontal edges
 
                 elif ranges[45].low <= ang < ranges[45].high:
                     neighbours = (gradient_mag[y+1, x-1],
