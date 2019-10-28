@@ -11,7 +11,7 @@ from gaussian import do_gaussian
 from canny import do_canny
 from hough import do_hough_straightline, do_hough_curve
 
-PLOT_INTERMEDIARY = True
+PLOT_INTERMEDIARY = False
 PLOT_RESULTS = True
 
 GAUSSIAN_SIZE = 5
@@ -64,7 +64,7 @@ def detect_lane(img_path):
         # plot results
         ax_img = fig.axes[0]
         ax_img.imshow(img, cmap='gray')
-        plt.savefig('results/'+img_path.split('\\')[-1].split('/')[-1])
+        plt.savefig('results/'+img_path.split('\\')[-1].split('/')[-1],bbox_inches='tight')
         #plt.show()
 
 

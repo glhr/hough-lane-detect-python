@@ -27,7 +27,7 @@ def plot_accumulator(accumulator):
 def plot_line(a,b,ax_res):
     x_vals = np.int64(np.array(ax_res.get_xlim()))
     y_vals = np.int64(b + a * x_vals)
-    ax_res.plot(x_vals,y_vals,'k',color='firebrick',alpha=0.8)
+    ax_res.plot(x_vals,y_vals,'k',color='firebrick',alpha=0.8,linewidth=5)
     return ax_res
 
 def plot_curve(img,k,beta,v,ax_img):

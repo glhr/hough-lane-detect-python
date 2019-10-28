@@ -16,8 +16,9 @@ def do_canny(img, low, high, plot=False):
     nonmax = nonmaxsuppression(gradient_mag, gradient_ang)
     # thresh = thresholding(nonmax, 0.2, 0.3)
 
-    low = np.int(np.mean(nonmax)*1.5)
-    high = np.int(low * 3)
+    median = np.median(gradient_mag)
+    low = np.int(median - median/3)
+    high = np.int(median + median/3)
 
     thresh = thresholding(nonmax, low, high)
     hyst, n = hysteresis(thresh)
