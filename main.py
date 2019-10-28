@@ -21,6 +21,7 @@ ACCUMULATOR_MAX_AREA = 30
 N_LINES = 2
 
 def detect_lane(img_path):
+    print('-->',img_path)
     # open image in grayscale
     img = np.array(Image.open(img_path).convert("L"))
 
@@ -46,7 +47,7 @@ def detect_lane(img_path):
     edges = do_canny(blurred, CANNY_LOW, CANNY_HIGH, plot=PLOT_INTERMEDIARY) # implement function in canny.py
     edges_cv = cv2.Canny(blurred, CANNY_LOW, CANNY_HIGH) # OpenCV built-in function, for testing only
 
-    fig = do_hough_straightline(edges,N_LINES,ACCUMULATOR_MAX_AREA,plot=PLOT_INTERMEDIARY) # implement function in hough.py
+    fig = do_hough_straightline(img,edges,N_LINES,ACCUMULATOR_MAX_AREA,plot=PLOT_INTERMEDIARY) # implement function in hough.py
 
     if PLOT_INTERMEDIARY:
         # plot results
@@ -62,8 +63,8 @@ def detect_lane(img_path):
 
     if PLOT_RESULTS:
         # plot results
-        ax_img = fig.axes[0]
-        ax_img.imshow(img, cmap='gray')
+        #ax_img = fig.axes[0]
+        #ax_img.imshow(img, cmap='gray')
         plt.savefig('results/'+img_path.split('\\')[-1].split('/')[-1],bbox_inches='tight')
         #plt.show()
 

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 
 def do_canny(img, low, high, plot=False):
-    print(" === CANNY === ")
+    #print(" === CANNY === ")
 
     gradient_mag, gradient_ang = calculate_gradients(img)
 
@@ -17,15 +17,18 @@ def do_canny(img, low, high, plot=False):
     # thresh = thresholding(nonmax, 0.2, 0.3)
 
     median = np.median(gradient_mag)
-    low = np.int(median - median/3)
-    high = np.int(median + median/3)
+
+    print("Median:",median," - mean:",np.mean(gradient_mag)," - max:", np.max(gradient_mag))
+    
+    low = median - median/4
+    high = median + median/2.5
 
     thresh = thresholding(nonmax, low, high)
     hyst, n = hysteresis(thresh)
 
     # for debugging
-    print("Double thresholding - found",np.count_nonzero(thresh == 100),"weak &",np.count_nonzero(thresh == 255),"strong edges")
-    print("Hysteresis - Turned",n,"weak edges into strong edges")
+    #print("Double thresholding - found",np.count_nonzero(thresh == 100),"weak &",np.count_nonzero(thresh == 255),"strong edges")
+    #print("Hysteresis - Turned",n,"weak edges into strong edges")
 
     if plot:
         # plot results
