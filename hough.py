@@ -38,13 +38,13 @@ def plot_curve(img,k,beta,v,ax_img):
     return ax_img
 
 def is_theta_in_range(theta):
-	return (theta < np.deg2rad(-20) and theta > np.deg2rad(-65)) or (theta > np.deg2rad(20) and theta < np.deg2rad(65))
+	return (theta < np.deg2rad(-10) and theta > np.deg2rad(-70)) or (theta > np.deg2rad(10) and theta < np.deg2rad(70))
 
 def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
 
     #img = img[10:-10][10:-10] # ignore image boundaries
     #print("-------------------------------------")
-    max_iterations = 5
+    max_iterations = 20
 
     h,w = img.shape
     h_orig,w_orig = orig.shape
@@ -122,8 +122,8 @@ def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
             lane1_side = (lane1_start < middle)
             print(f"- Lane 1: Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
             print(f"\t starting at y = ", lane1_start)
-            plot_line(a,b,ax_res,color='red')
-            plot_line(a,b,ax_img,opacity=0.3,color='red')
+            plot_line(a,b,ax_res,color='green')
+            plot_line(a,b,ax_img,opacity=0.3,color='green')
             n += 1
         elif n == 2:
             lane2_pos = (ang > 0)
@@ -138,13 +138,18 @@ def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
                 plot_line(a,b,ax_res,color='blue')
                 plot_line(a,b,ax_img,opacity=0.3,color='blue')
                 n += 1
+            else:
+                plot_line(a,b,ax_res,opacity=0.3,color='red')
 
         prev_ang = ang
         prev_rho = rho
 
         remove_area = max_area
         for i in range(np.int(rho_index-remove_area),np.int(rho_index+remove_area+1)):
-            accumulator[i][np.int(theta_index-remove_area):np.int(theta_index+remove_area)] = 0
+            try:
+                accumulator[i][np.int(theta_index-remove_area):np.int(theta_index+remove_area)] = 0
+            except:
+                pass
         
         iterations += 1
 
