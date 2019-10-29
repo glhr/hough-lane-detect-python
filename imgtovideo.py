@@ -1,6 +1,7 @@
 import cv2
-import numpy as np
 import glob
+import time
+timestr = time.strftime("%Y%m%d-%H%M%S")
 
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 
@@ -10,7 +11,7 @@ for path in glob.iglob('results/ircam*.png'):
 
     if not initialized:
         height, width, layers = img.shape
-        video = cv2.VideoWriter('video.mp4',fourcc,3,(width,height))
+        video = cv2.VideoWriter('video'+timestr+'.mp4',fourcc,3,(width,height))
         initialized = True
 
     video.write(img)
