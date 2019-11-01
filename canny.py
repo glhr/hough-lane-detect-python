@@ -1,10 +1,8 @@
-from scipy import signal, ndimage
+from scipy import ndimage
 import numpy as np
 from PIL import Image
 import cv2
-
 from collections import namedtuple
-
 import matplotlib.pyplot as plt
 
 
@@ -108,7 +106,7 @@ def nonmaxsuppression(gradient_mag, gradient_ang):
                                   gradient_mag[y, x+1])
 
                 elif ranges[90].low <= ang < ranges[90].high:
-                    # neighbours = (gradient_mag[y+1, x],
+                    #neighbours = (gradient_mag[y+1, x],
                     #              gradient_mag[y-1, x])
                     neighbours = (255,255) # discard horizontal edges
 
