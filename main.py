@@ -11,12 +11,13 @@ from gaussian import do_gaussian
 from canny import do_canny
 from hough import do_hough_straightline, do_hough_curve
 
-PLOT_INTERMEDIARY = False
+PLOT_INTERMEDIARY = True
 PLOT_RESULTS = True
 
 GAUSSIAN_SIZE = 5
 CANNY_LOW = 5
 CANNY_HIGH = 15
+CANNY_ADAPTIVE_THRESH = True
 ACCUMULATOR_MAX_AREA = 10
 N_LINES = 2
 
@@ -42,9 +43,9 @@ def detect_lane(img_path):
     blurred = do_gaussian(img) # implement function in gaussian.py
     cv2.imwrite('gaussian_output/output_'+img_path.split('\\')[-1].split('/')[-1],blurred)
     
-    blurred_cv = cv2.GaussianBlur(img, (GAUSSIAN_SIZE,GAUSSIAN_SIZE),0) # OpenCV built-in function, for testing only
+    #blurred_cv = cv2.GaussianBlur(img, (GAUSSIAN_SIZE,GAUSSIAN_SIZE),0) # OpenCV built-in function, for testing only
 
-    edges = do_canny(blurred, CANNY_LOW, CANNY_HIGH, plot=PLOT_INTERMEDIARY) # implement function in canny.py
+    edges = do_canny(blurred, CANNY_ADAPTIVE_THRESH, low=CANNY_LOW, high=CANNY_HIGH, plot=PLOT_INTERMEDIARY) # implement function in canny.py
     edges_cv = cv2.Canny(blurred, CANNY_LOW, CANNY_HIGH) # OpenCV built-in function, for testing only
 
     fig = do_hough_straightline(img,edges,N_LINES,ACCUMULATOR_MAX_AREA,plot=PLOT_INTERMEDIARY) # implement function in hough.py

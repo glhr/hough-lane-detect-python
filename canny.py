@@ -6,7 +6,7 @@ from collections import namedtuple
 import matplotlib.pyplot as plt
 
 
-def do_canny(img, low, high, plot=False):
+def do_canny(img, adaptive_thresh, low, high, plot=False):
     #print(" === CANNY === ")
 
     gradient_mag, gradient_ang = calculate_gradients(img)
@@ -17,9 +17,10 @@ def do_canny(img, low, high, plot=False):
     median = np.median(gradient_mag)
 
     print("Median:",median," - mean:",np.mean(gradient_mag)," - max:", np.max(gradient_mag))
-    
-    low = median - median/4
-    high = median + median/2.5
+
+    if adaptive_thresh:
+        low = median - median/4
+        high = median + median/2.5
 
     thresh = thresholding(nonmax, low, high)
     hyst, n = hysteresis(thresh)

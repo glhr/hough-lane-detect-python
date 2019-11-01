@@ -37,8 +37,10 @@ def plot_curve(img,k,beta,v,ax_img):
     ax_img.plot(x_vals,y_vals,'k',color='firebrick',alpha=0.5)
     return ax_img
 
+
 def is_theta_in_range(theta):
-	return (theta < np.deg2rad(-10) and theta > np.deg2rad(-70)) or (theta > np.deg2rad(10) and theta < np.deg2rad(70))
+    return (theta < np.deg2rad(-10) and theta > np.deg2rad(-70)) or (theta > np.deg2rad(10) and theta < np.deg2rad(70))
+
 
 def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
 
@@ -70,15 +72,6 @@ def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
                         rho = np.uint64(rho)
                         accumulator[rho,theta_i] += 1  # increment accumulator for this coordinate pair
 
-    # Plotting
-
-    if plot:
-        fig1 = plt.figure()
-
-        ax_acc = fig1.add_subplot(111) # accumulator
-        ax_acc.imshow(accumulator, cmap='gray')
-        forceAspect(ax_acc,0.5)
-
     fig2 = plt.figure()
 
     ax_img = fig2.add_subplot(211) # original image
@@ -95,6 +88,18 @@ def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
 
     n = 1
     iterations = 0
+
+    if plot:
+        cv2.imwrite("accumulator.png",accumulator)
+
+    # Plotting
+    if plot:
+        fig1 = plt.figure()
+
+        ax_acc = fig1.add_subplot(111) # accumulator
+        ax_acc.imshow(accumulator, cmap='gray')
+        forceAspect(ax_acc,0.5)
+
     while n <= n_lines and iterations < max_iterations:
         print(iterations)
         # find maximum point in accumulator
@@ -107,12 +112,13 @@ def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
         theta_index = np.uint64(max_index % accumulator.shape[1])
         rho_index = np.uint64(max_index / accumulator.shape[1])
 
+        # cv2.circle(accumulator, (rho_index,theta_index), 50, (0,255,0), thickness=5, lineType=8, shift=0)
+
         ang = thetas[theta_index]
         rho = rhos[rho_index]
 
         #print(f"Hough coordinates: rho {rho:.2f}  theta(rad) {ang:.2f}  theta(deg) {np.rad2deg(ang)}")
-	
-        
+
         if n == 1:
             lane1_pos = (ang > 0)
             a = -(np.cos(ang)/np.sin(ang))
@@ -153,6 +159,8 @@ def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
         
         iterations += 1
 
+
+
     ax_res.set_ylim(0,h)
     ax_res.set_xlim(0,w)
     ax_res.invert_yaxis()
@@ -162,7 +170,7 @@ def do_hough_straightline(orig,img,n_lines,max_area,plot=False):
     ax_img.invert_yaxis()
 
     if plot:
-        cv2.imwrite("accumulator.png",accumulator)
+        cv2.imwrite("accumulator-removed.png",accumulator)
         plt.show()
 
     return fig2
@@ -219,7 +227,6 @@ def do_hough_curve(orig,img):
         ax_img = plot_curve(np.flipud(img),ks[max[1]],betas[max[0]],max[2]-h,ax_img)
 
         accumulator[max[0]][max[1]][max[2]] = 0
-
 
     ax_img.set_ylim(0,h)
     ax_img.set_xlim(0,w)
