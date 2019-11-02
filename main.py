@@ -1,8 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
-# note: install pillow and matplotlib with the command
-# pip install pillow matplotlib
 import glob
 import cv2 # for testing only
 
@@ -11,15 +9,16 @@ from gaussian import do_gaussian
 from canny import do_canny
 from hough import do_hough_straightline, do_hough_curve
 
-PLOT_INTERMEDIARY = True
-PLOT_RESULTS = True
+PLOT_INTERMEDIARY = True # display results of each step
+PLOT_RESULTS = True # save final result in result folder
 
-GAUSSIAN_SIZE = 5
+GAUSSIAN_SIZE = 5 # kernel size
 CANNY_LOW = 5
 CANNY_HIGH = 15
-CANNY_ADAPTIVE_THRESH = True
-ACCUMULATOR_MAX_AREA = 10
-N_LINES = 2
+CANNY_ADAPTIVE_THRESH = True # set to true to use median-based threshold instead of fixed values above
+ACCUMULATOR_MAX_AREA = 10 # area around maximum to set to 0 in accumulator before looking for next candidate
+N_LINES = 2 # number of lanes
+
 
 def detect_lane(img_path):
     print('-->',img_path)
@@ -62,7 +61,7 @@ def detect_lane(img_path):
         plt.subplot(221),plt.imshow(img, cmap='gray')
         plt.title('Original image'), plt.xticks([]), plt.yticks([])
         plt.subplot(222),plt.imshow(blurred, cmap='gray')
-        plt.title('Blurred image (Gaussian filter OpenCV)'), plt.xticks([]), plt.yticks([])
+        plt.title('Blurred image (homemade Gaussian filter)'), plt.xticks([]), plt.yticks([])
         plt.subplot(223),plt.imshow(edges_cv, cmap='gray')
         plt.title('Canny edge detection (OpenCV)'), plt.xticks([]), plt.yticks([])
         plt.subplot(224),plt.imshow(edges, cmap='gray')

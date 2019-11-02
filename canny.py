@@ -12,11 +12,10 @@ def do_canny(img, adaptive_thresh, low, high, plot=False):
     gradient_mag, gradient_ang = calculate_gradients(img)
 
     nonmax = nonmaxsuppression(gradient_mag, gradient_ang)
-    # thresh = thresholding(nonmax, 0.2, 0.3)
 
     median = np.median(gradient_mag)
 
-    print("Median:",median," - mean:",np.mean(gradient_mag)," - max:", np.max(gradient_mag))
+    print("After non-maximum suppression | Median:",median," - mean:",np.mean(gradient_mag)," - max:", np.max(gradient_mag))
 
     if adaptive_thresh:
         low = median - median/4
@@ -26,8 +25,8 @@ def do_canny(img, adaptive_thresh, low, high, plot=False):
     hyst, n = hysteresis(thresh)
 
     # for debugging
-    #print("Double thresholding - found",np.count_nonzero(thresh == 100),"weak &",np.count_nonzero(thresh == 255),"strong edges")
-    #print("Hysteresis - Turned",n,"weak edges into strong edges")
+    print("Double thresholding - found",np.count_nonzero(thresh == 100),"weak &",np.count_nonzero(thresh == 255),"strong edges")
+    print("Hysteresis - Turned",n,"weak edges into strong edges")
 
     if plot:
         # plot results
