@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
-import progressbar
 
 
 def forceAspect(ax,aspect):
@@ -199,7 +198,7 @@ def do_hough_curve(orig,img):
     vs = np.arange(0,2*h+1)
     accumulator = np.zeros((len(betas),len(ks),len(vs)), dtype=np.uint64)
 
-    for y in progressbar.progressbar(range(1,h-1)):
+    for y in range(1,h-1):
         for x in range(1,w-1):
             if img[y,x] > 0:  # if we're on an edge
                 # print(i,j)

@@ -50,6 +50,13 @@ def detect_lane(img_path):
 
     fig = do_hough_straightline(img,edges,N_LINES,ACCUMULATOR_MAX_AREA,plot=PLOT_INTERMEDIARY) # implement function in hough.py
 
+    if PLOT_RESULTS:
+        # plot results
+        #ax_img = fig.axes[0]
+        #ax_img.imshow(img, cmap='gray')
+        fig.savefig('results/'+img_path.split('\\')[-1].split('/')[-1],bbox_inches='tight')
+        #plt.show()
+
     if PLOT_INTERMEDIARY:
         # plot results
         plt.subplot(221),plt.imshow(img, cmap='gray')
@@ -61,13 +68,6 @@ def detect_lane(img_path):
         plt.subplot(224),plt.imshow(edges, cmap='gray')
         plt.title('Canny edge detection (homemade)'), plt.xticks([]), plt.yticks([])
         plt.show()
-
-    if PLOT_RESULTS:
-        # plot results
-        #ax_img = fig.axes[0]
-        #ax_img.imshow(img, cmap='gray')
-        plt.savefig('results/'+img_path.split('\\')[-1].split('/')[-1],bbox_inches='tight')
-        #plt.show()
 
 
 for path in glob.iglob('cam_data/ir/*.png'):
