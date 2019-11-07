@@ -9,6 +9,14 @@ GAUSSIAN_SIZE = 5 # kernel size
 CANNY_LOW = 5
 CANNY_HIGH = 15
 
+colors = {
+            'white':(255, 255, 255),
+            'black':(0,0,0),
+            'green':(0, 255, 0),
+            'blue':(255,0,0),
+            'red':(0,0,255),
+            'yellow':(255,255,0)
+}
 
 def preprocessing(image):
     # only keep bottom part of image
@@ -28,18 +36,22 @@ def preprocessing(image):
     return blurred
 
 
-def plot_line(a, b, rho, img, opacity=0.8, color='firebrick'):
+def plot_line(a, b, rho, img, opacity=0.8, color='red'):
     y_max, x_max = img.shape[:2]
     pt1 = (0, int(a * 0 + b))
     pt2 = (x_max, int(a * x_max + b))
-    cv2.line(img, pt1, pt2, (0, 0, 255), 1, cv2.LINE_AA)
-    print(a, b)
+    cv2.line(img, pt1, pt2, colors[color], 1, cv2.LINE_AA)
+    #print(a, b)
     return img
 
 
 def is_theta_in_range(theta):
     return (theta < np.deg2rad(-10) and theta > np.deg2rad(-70)) or (theta > np.deg2rad(10) and theta < np.deg2rad(70))
 
+def theta_ranges_from_lane_angle(lane_angle):
+    theta_offset = 45
+    print('Theta limits:',lane_angle-theta_offset,lane_angle+theta_offset)
+    return np.deg2rad(np.concatenate((np.arange(lane_angle-theta_offset,-10),np.arange(10,lane_angle+theta_offset))))
 
 def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
     # Copy edges to the images that will display the results in BGR
@@ -52,10 +64,11 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
     h, w = img.shape
     h_orig, w_orig = orig.shape[:2]
     middle = w / 2
+    print("Image center:",middle)
     diag = np.ceil(np.hypot(h, w))
     # print(f"IMG dimensions: {img.shape} max. intensity: {np.max(img)}")
 
-    thetas = np.deg2rad(np.arange(-70.0, 70.0))
+    thetas = theta_ranges_from_lane_angle(lane_angle)
     rhos = np.linspace(-diag, diag, diag * 2.0)
 
     # print(f"diagonal: {diag}")
@@ -67,11 +80,9 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
             if img[i, j] > 0:  # if we're on an edge
                 for theta_i in range(len(thetas)):  # calculate rho for every theta
                     theta = thetas[theta_i]
-                    if is_theta_in_range(theta):
-                        rho = np.round(j * np.cos(theta) + i * np.sin(theta)) + diag
-                        # print("point",(i,j),"rho",rho,"theta",theta)
-                        rho = np.uint64(rho)
-                        accumulator[rho, theta_i] += 1  # increment accumulator for this coordinate pair
+                    rho = np.uint64(np.round(j * np.cos(theta) + i * np.sin(theta)) + diag)
+                    # print("point",(i,j),"rho",rho,"theta",theta)
+                    accumulator[rho, theta_i] += 1  # increment accumulator for this coordinate pair
 
     n = 1
     iterations = 0
@@ -102,8 +113,9 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
             lane1_start = ((h - 1) - b) / a
             lane1_end = -b / a
             lane1_side = (lane1_start < middle)
-            # print(f"- Lane 1: Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
+            print(f"- Lane 1: Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
             # print(f"\t starting at y = ", lane1_start)
+            print(f"- Lane 1: Theta {np.rad2deg(ang):.2f} - Rho {rho:.2f}")
             color_edges = plot_line(a, b, rho, color_edges, color='green')
             n += 1
         elif n == 2:
@@ -115,10 +127,13 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
             lane2_side = (lane2_start < middle)
             if (lane1_side != lane2_side) and ((lane2_end > lane1_end and lane2_start > lane1_start) or (
                     lane2_end < lane1_end and lane2_start < lane1_start)):
-                # print(f"- Lane 2: Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
+                print(f"- Lane 2: Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
                 # print(f"\t starting at y = ", lane2_start)
-                color_edges = plot_line(a, b, rho, color_edges, color='blue')
+                print(f"- Lane 2: Theta {np.rad2deg(ang):.2f} - Rho {rho:.2f}")
+                color_edges = plot_line(a, b, rho, color_edges, color='yellow')
                 n += 1
+            else:
+                color_edges = plot_line(a, b, rho, color_edges, color='red')
 
         prev_ang = ang
         prev_rho = rho
@@ -132,6 +147,8 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
 
         iterations += 1
 
+    print("Solved in",iterations,"iterations")
+
     return color_edges
 
 
@@ -139,7 +156,7 @@ def draw_lanes(image_path):
     image = cv2.imread(image_path)
     image = preprocessing(image)
     edges = cv2.Canny(image, CANNY_LOW, CANNY_HIGH, None, 3)
-    return do_hough_straightline(image, edges, lane_angle=0, n_lines=2, max_area=10, plot=False)
+    return do_hough_straightline(image, edges, lane_angle=20, n_lines=2, max_area=10, plot=False)
 
 
 for path in glob.iglob('cam_data/ir/*.png'):
