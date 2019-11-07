@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 import math
 import glob
+import numexpr as ne
 
 GAUSSIAN_SIZE = 5 # kernel size
 CANNY_LOW = 5
@@ -78,11 +79,9 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
     for i in range(0, h):
         for j in range(0, w):
             if img[i, j] > 0:  # if we're on an edge
-                for theta_i in range(len(thetas)):  # calculate rho for every theta
-                    theta = thetas[theta_i]
-                    rho = np.uint64(np.round(j * np.cos(theta) + i * np.sin(theta)) + diag)
-                    # print("point",(i,j),"rho",rho,"theta",theta)
-                    accumulator[rho, theta_i] += 1  # increment accumulator for this coordinate pair
+                rho_calc = ne.evaluate("j * cos(thetas) + i * sin(thetas) + diag")
+                for rho_i,rho in enumerate(rho_calc):
+                    accumulator[np.uint64(rho_calc[rho_i]), rho_i] += 1  # increment accumulator for this coordinate pair
 
     n = 1
     iterations = 0
