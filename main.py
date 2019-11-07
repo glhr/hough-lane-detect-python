@@ -86,6 +86,11 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
     n = 1
     iterations = 0
 
+    lane_start = [0,0]
+    lane_end = [0,0]
+    lane_pos = [0,0]
+    lane_side = [0,0]
+
     while n <= n_lines and iterations < max_iterations:
         # print(iterations)
         # find maximum point in accumulator
@@ -103,36 +108,30 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
         ang = thetas[theta_index]
         rho = rhos[rho_index]
 
+        lane_pos[n-1] = (ang > 0)
+        a = -(np.cos(ang) / np.sin(ang))
+        b = rho / np.sin(ang)
+        lane_start[n-1] = ((h - 1) - b) / a
+        lane_end[n-1] = -b / a
+        lane_side[n-1] = (lane_start[n-1] < middle)
+
+        print(f"- Lane {n}: Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
+        # print(f"\t starting at y = ", lane1_start)
+        print(f"- Lane {n}: Theta {np.rad2deg(ang):.2f} - Rho {rho:.2f}")
+
         # print(f"Hough coordinates: rho {rho:.2f}  theta(rad) {ang:.2f}  theta(deg) {np.rad2deg(ang)}")
 
         if n == 1:
-            lane1_pos = (ang > 0)
-            a = -(np.cos(ang) / np.sin(ang))
-            b = rho / np.sin(ang)
-            lane1_start = ((h - 1) - b) / a
-            lane1_end = -b / a
-            lane1_side = (lane1_start < middle)
-            print(f"- Lane 1: Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
-            # print(f"\t starting at y = ", lane1_start)
-            print(f"- Lane 1: Theta {np.rad2deg(ang):.2f} - Rho {rho:.2f}")
             color_edges = plot_line(a, b, rho, color_edges, color='green')
             n += 1
         elif n == 2:
-            lane2_pos = (ang > 0)
-            a = -(np.cos(ang) / np.sin(ang))
-            b = rho / np.sin(ang)
-            lane2_start = ((h - 1) - b) / a
-            lane2_end = -b / a
-            lane2_side = (lane2_start < middle)
-            if (lane1_side != lane2_side) and ((lane2_end > lane1_end and lane2_start > lane1_start) or (
-                    lane2_end < lane1_end and lane2_start < lane1_start)):
-                print(f"- Lane 2: Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
-                # print(f"\t starting at y = ", lane2_start)
-                print(f"- Lane 2: Theta {np.rad2deg(ang):.2f} - Rho {rho:.2f}")
-                color_edges = plot_line(a, b, rho, color_edges, color='yellow')
+            if (lane_side[n-1] != lane_side[n-2]) and ((lane_end[n-1] > lane_end[n-2] and lane_start[n-1] > lane_start[n-2]) or (
+                    lane_end[n-1] < lane_end[n-2] and lane_start[n-1] < lane_start[n-2])):
+                lane_color = 'blue'
                 n += 1
             else:
-                color_edges = plot_line(a, b, rho, color_edges, color='red')
+                lane_color = 'red'
+            color_edges = plot_line(a, b, rho, color_edges, color=lane_color)
 
         prev_ang = ang
         prev_rho = rho
@@ -155,7 +154,7 @@ def draw_lanes(image_path):
     image = cv2.imread(image_path)
     image = preprocessing(image)
     edges = cv2.Canny(image, CANNY_LOW, CANNY_HIGH, None, 3)
-    return do_hough_straightline(image, edges, lane_angle=20, n_lines=2, max_area=10, plot=False)
+    return do_hough_straightline(image, edges, lane_angle=0, n_lines=2, max_area=10, plot=False)
 
 
 for path in glob.iglob('cam_data/ir/*.png'):
