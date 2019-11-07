@@ -1,76 +1,150 @@
-import matplotlib.pyplot as plt
+#!./env/bin/python3
+
+import cv2
 import numpy as np
-from PIL import Image
+import math
 import glob
-import cv2 # for testing only
-
-# local imports below
-from gaussian import do_gaussian
-from canny import do_canny
-from hough import do_hough_straightline, do_hough_curve
-
-PLOT_INTERMEDIARY = True # display results of each step
-PLOT_RESULTS = True # save final result in result folder
 
 GAUSSIAN_SIZE = 5 # kernel size
 CANNY_LOW = 5
 CANNY_HIGH = 15
-CANNY_ADAPTIVE_THRESH = True # set to true to use median-based threshold instead of fixed values above
-ACCUMULATOR_MAX_AREA = 10 # area around maximum to set to 0 in accumulator before looking for next candidate
-N_LINES = 2 # number of lanes
 
 
-def detect_lane(img_path):
-    print('-->',img_path)
-    # open image in grayscale
-    orig_img = np.array(Image.open(img_path).convert("L"))
-
+def preprocessing(image):
     # only keep bottom part of image
-    img = orig_img[220:,:]
+    img = image[220:,:]
 
     # downsample image
     h,w = img.shape[:2]
     desired_w = 250
-    small_to_large_image_size_ratio = desired_w/w
+    small_to_large_image_size_ratio = 0.3125
     img = cv2.resize(img,
                        (0,0), # set fx and fy, not the final size
                        fx=small_to_large_image_size_ratio,
                        fy=small_to_large_image_size_ratio,
                        interpolation=cv2.INTER_LINEAR)
 
-    cv2.imwrite('gaussian_output/input_'+img_path.split('\\')[-1].split('/')[-1],img)
-    blurred = do_gaussian(img) # implement function in gaussian.py
-    cv2.imwrite('gaussian_output/output_'+img_path.split('\\')[-1].split('/')[-1],blurred)
-    
-    #blurred_cv = cv2.GaussianBlur(img, (GAUSSIAN_SIZE,GAUSSIAN_SIZE),0) # OpenCV built-in function, for testing only
+    blurred = cv2.GaussianBlur(img, (GAUSSIAN_SIZE, GAUSSIAN_SIZE), 0)
+    return blurred
 
-    edges = do_canny(blurred, CANNY_ADAPTIVE_THRESH, low=CANNY_LOW, high=CANNY_HIGH, plot=PLOT_INTERMEDIARY) # implement function in canny.py
-    edges_cv = cv2.Canny(blurred, CANNY_LOW, CANNY_HIGH) # OpenCV built-in function, for testing only
 
-    fig = do_hough_straightline(img,edges,N_LINES,ACCUMULATOR_MAX_AREA,plot=PLOT_INTERMEDIARY) # implement function in hough.py
+def plot_line(a, b, rho, img, opacity=0.8, color='firebrick'):
+    y_max, x_max = img.shape[:2]
+    pt1 = (0, int(a * 0 + b))
+    pt2 = (x_max, int(a * x_max + b))
+    cv2.line(img, pt1, pt2, (0, 0, 255), 1, cv2.LINE_AA)
+    print(a, b)
+    return img
 
-    if PLOT_RESULTS:
-        # plot results
-        #ax_img = fig.axes[0]
-        #ax_img.imshow(img, cmap='gray')
-        fig.savefig('results/'+img_path.split('\\')[-1].split('/')[-1],bbox_inches='tight')
-        #plt.show()
 
-    if PLOT_INTERMEDIARY:
-        # plot results
-        plt.subplot(221),plt.imshow(img, cmap='gray')
-        plt.title('Original image'), plt.xticks([]), plt.yticks([])
-        plt.subplot(222),plt.imshow(blurred, cmap='gray')
-        plt.title('Blurred image (homemade Gaussian filter)'), plt.xticks([]), plt.yticks([])
-        plt.subplot(223),plt.imshow(edges_cv, cmap='gray')
-        plt.title('Canny edge detection (OpenCV)'), plt.xticks([]), plt.yticks([])
-        plt.subplot(224),plt.imshow(edges, cmap='gray')
-        plt.title('Canny edge detection (homemade)'), plt.xticks([]), plt.yticks([])
-        plt.show()
+def is_theta_in_range(theta):
+    return (theta < np.deg2rad(-10) and theta > np.deg2rad(-70)) or (theta > np.deg2rad(10) and theta < np.deg2rad(70))
+
+
+def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
+    # Copy edges to the images that will display the results in BGR
+    color_edges = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+
+    # img = img[10:-10][10:-10] # ignore image boundaries
+    # print("-------------------------------------")
+    max_iterations = 20
+
+    h, w = img.shape
+    h_orig, w_orig = orig.shape[:2]
+    middle = w / 2
+    diag = np.ceil(np.hypot(h, w))
+    # print(f"IMG dimensions: {img.shape} max. intensity: {np.max(img)}")
+
+    thetas = np.deg2rad(np.arange(-70.0, 70.0))
+    rhos = np.linspace(-diag, diag, diag * 2.0)
+
+    # print(f"diagonal: {diag}")
+
+    accumulator = np.zeros((np.uint64(2 * diag), len(thetas)), dtype=np.uint64)
+
+    for i in range(0, h):
+        for j in range(0, w):
+            if img[i, j] > 0:  # if we're on an edge
+                for theta_i in range(len(thetas)):  # calculate rho for every theta
+                    theta = thetas[theta_i]
+                    if is_theta_in_range(theta):
+                        rho = np.round(j * np.cos(theta) + i * np.sin(theta)) + diag
+                        # print("point",(i,j),"rho",rho,"theta",theta)
+                        rho = np.uint64(rho)
+                        accumulator[rho, theta_i] += 1  # increment accumulator for this coordinate pair
+
+    n = 1
+    iterations = 0
+
+    while n <= n_lines and iterations < max_iterations:
+        # print(iterations)
+        # find maximum point in accumulator
+        # result = np.where(accumulator == np.max(accumulator))
+        # print("max. in accumulator:", np.max(accumulator))
+        # maxCoordinates = list(zip(result[0], result[1]))
+        # print(maxCoordinates)
+
+        max_index = np.argmax(accumulator)  # 2d index of maximum point in accumulator
+        theta_index = np.uint64(max_index % accumulator.shape[1])
+        rho_index = np.uint64(max_index / accumulator.shape[1])
+
+        # cv2.circle(accumulator, (rho_index,theta_index), 50, (0,255,0), thickness=5, lineType=8, shift=0)
+
+        ang = thetas[theta_index]
+        rho = rhos[rho_index]
+
+        # print(f"Hough coordinates: rho {rho:.2f}  theta(rad) {ang:.2f}  theta(deg) {np.rad2deg(ang)}")
+
+        if n == 1:
+            lane1_pos = (ang > 0)
+            a = -(np.cos(ang) / np.sin(ang))
+            b = rho / np.sin(ang)
+            lane1_start = ((h - 1) - b) / a
+            lane1_end = -b / a
+            lane1_side = (lane1_start < middle)
+            # print(f"- Lane 1: Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
+            # print(f"\t starting at y = ", lane1_start)
+            color_edges = plot_line(a, b, rho, color_edges, color='green')
+            n += 1
+        elif n == 2:
+            lane2_pos = (ang > 0)
+            a = -(np.cos(ang) / np.sin(ang))
+            b = rho / np.sin(ang)
+            lane2_start = ((h - 1) - b) / a
+            lane2_end = -b / a
+            lane2_side = (lane2_start < middle)
+            if (lane1_side != lane2_side) and ((lane2_end > lane1_end and lane2_start > lane1_start) or (
+                    lane2_end < lane1_end and lane2_start < lane1_start)):
+                # print(f"- Lane 2: Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
+                # print(f"\t starting at y = ", lane2_start)
+                color_edges = plot_line(a, b, rho, color_edges, color='blue')
+                n += 1
+
+        prev_ang = ang
+        prev_rho = rho
+
+        remove_area = max_area
+        for i in range(np.int(rho_index - remove_area), np.int(rho_index + remove_area + 1)):
+            try:
+                accumulator[i][np.int(theta_index - remove_area):np.int(theta_index + remove_area)] = 0
+            except:
+                pass
+
+        iterations += 1
+
+    return color_edges
+
+
+def draw_lanes(image_path):
+    image = cv2.imread(image_path)
+    image = preprocessing(image)
+    edges = cv2.Canny(image, CANNY_LOW, CANNY_HIGH, None, 3)
+    return do_hough_straightline(image, edges, lane_angle=0, n_lines=2, max_area=10, plot=False)
 
 
 for path in glob.iglob('cam_data/ir/*.png'):
-    detect_lane(path)
+    cv2.imshow('lanes',draw_lanes(path))
+    cv2.waitKey(0)
 
 # detect_lane('canny_output/cannylane_test.jpg')
 #detect_lane('cam_data/ir/ircam1571746678401506290.png')
