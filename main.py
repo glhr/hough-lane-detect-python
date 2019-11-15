@@ -9,6 +9,8 @@ import numexpr as ne
 GAUSSIAN_SIZE = 5 # kernel size
 CANNY_LOW = 8
 CANNY_HIGH = 20
+DOWNSCALING_FACTOR = 0.1
+HORIZON = 220
 
 colors = {
             'white':(255, 255, 255),
@@ -21,12 +23,12 @@ colors = {
 
 def preprocessing(image):
     # only keep bottom part of image
-    img = image[220:,:]
+    img = image[HORIZON:,:]
 
     # downsample image
     h,w = img.shape[:2]
     #desired_w = 150
-    small_to_large_image_size_ratio = 0.1
+    small_to_large_image_size_ratio = DOWNSCALING_FACTOR
     img = cv2.resize(img,
                        (0,0), # set fx and fy, not the final size
                        fx=small_to_large_image_size_ratio,
@@ -37,8 +39,11 @@ def preprocessing(image):
     return blurred
 
 
-def plot_line(a, b, rho, img, opacity=0.8, color='red'):
+def plot_line(a, b, rho, img, opacity=0.8, color='red',downsampling=1):
     y_max, x_max = img.shape[:2]
+    #a = a * downsampling
+    if downsampling < 1:
+        b = (b / downsampling)+HORIZON
     pt1 = (0, int(a * 0 + b))
     pt2 = (x_max, int(a * x_max + b))
     cv2.line(img, pt1, pt2, colors[color], 1, cv2.LINE_AA)
@@ -49,6 +54,8 @@ def is_theta_in_range(theta):
     return (theta < np.deg2rad(-10) and theta > np.deg2rad(-70)) or (theta > np.deg2rad(10) and theta < np.deg2rad(70))
 
 def theta_ranges_from_lane_angle(lane_angle):
+    if lane_angle == None:
+        return np.deg2rad(np.arange(-90,90))
     theta_offset = 70
     print('Theta limits:',lane_angle-theta_offset,lane_angle+theta_offset)
     return np.deg2rad(np.concatenate((np.arange(lane_angle-theta_offset,-10),np.arange(10,lane_angle+theta_offset))))
@@ -56,6 +63,8 @@ def theta_ranges_from_lane_angle(lane_angle):
 def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
     # Copy edges to the images that will display the results in BGR
     color_edges = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+    color_orig = orig
+    blank_orig = np.zeros_like(orig)
 
     # img = img[10:-10][10:-10] # ignore image boundaries
     # print("-------------------------------------")
@@ -112,19 +121,23 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
         print(f"- Lane {n}: Theta {np.rad2deg(ang):.2f} - Rho {rho:.2f}")
 
         if n == 1:
-            color_edges = plot_line(a, b, rho, color_edges, color='green')
+            color_edges =   plot_line(a, b, rho, color_edges, color='green')
+            color_orig =    plot_line(a, b, rho, color_orig, color='green', downsampling=DOWNSCALING_FACTOR)
+            blank_orig = plot_line(a, b, rho, blank_orig, color='white', downsampling=DOWNSCALING_FACTOR)
             #accumulator = remove_area_around_max(accumulator,max_area,(rho_index,theta_index))
             n += 1
         elif n == 2:
-            if (lane_side[n-1] != lane_side[n-2]) and \
+            if      (lane_side[n-1] != lane_side[n-2]) and \
                     ((lane_end[n-1] > lane_end[n-2] and lane_start[n-1] > lane_start[n-2]) \
                 or  (lane_end[n-1] < lane_end[n-2] and lane_start[n-1] < lane_start[n-2])):
                 lane_color = 'blue'
+                color_orig = plot_line(a, b, rho, color_orig, color=lane_color, downsampling=DOWNSCALING_FACTOR)
+                blank_orig = plot_line(a, b, rho, blank_orig, color='white', downsampling=DOWNSCALING_FACTOR)
                 n += 1
             else:
                 lane_color = 'red'
                 #accumulator = remove_area_around_max(accumulator,max_area,(rho_index,theta_index))
-            color_edges = plot_line(a, b, rho, color_edges, color=lane_color)
+            color_edges =   plot_line(a, b, rho, color_edges, color=lane_color)
 
         for i in range(np.int(rho_index - max_area), np.int(rho_index + max_area + 1)):
             try:
@@ -138,23 +151,23 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
 
     print("Solved in",iterations,"iterations")
 
-    return color_edges
+    return color_edges, color_orig, blank_orig[HORIZON:,:]
 
 
 def draw_lanes(image_path):
     image = cv2.imread(image_path)
-    image = preprocessing(image)
-    edges = cv2.Canny(image, CANNY_LOW, CANNY_HIGH, None, 3)
-    return image, do_hough_straightline(image, edges, lane_angle=0, n_lines=2, max_area=5, plot=False)
+    image_preprocessed = preprocessing(image)
+    edges = cv2.Canny(image_preprocessed, CANNY_LOW, CANNY_HIGH, None, 3)
+    return do_hough_straightline(image, edges, lane_angle=None, n_lines=2, max_area=5, plot=False)
 
 
-for path in glob.iglob('/home/zacefron/Desktop/golfcart-sensorfusion/sensorfusion/cam_data/ir*.png'):
-    orig,lanes = draw_lanes(path)
-    cv2.imshow('orig',orig)
-    cv2.imshow('lanes',lanes)
+for path in glob.iglob('/home/zacefron/Desktop/golfcart-sensorfusion/sensorfusion/cam_data/ir/*.png'):
+    print(path)
+    color_edges, color_orig, blank_orig = draw_lanes(path)
+    #cv2.imshow('orig',orig)
+    cv2.imshow('original',color_orig)
+    cv2.imshow('edges', color_edges)
+    cv2.imshow('binary', blank_orig)
     k = cv2.waitKey(0) & 0xFF
     if k == ord('q'):
         break
-
-# detect_lane('canny_output/cannylane_test.jpg')
-#detect_lane('cam_data/ir/ircam1571746678401506290.png')
