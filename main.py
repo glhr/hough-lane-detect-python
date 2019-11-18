@@ -9,7 +9,7 @@ import pandas as pd
 
 HOUGH_OPENCV = True
 
-HIST_EQUALIZATION = True
+HIST_EQUALIZATION = False
 GAUSSIAN_SIZE = 5 # kernel size
 if not HIST_EQUALIZATION:
     CANNY_LOW = 8
@@ -19,7 +19,7 @@ else:
     CANNY_HIGH = 100
 DOWNSCALING_FACTOR = 0.2
 HORIZON = 220
-MAX_AREA = 10
+MAX_AREA = 21
 LANE_ANGLE = None
 
 colors = {
@@ -172,15 +172,23 @@ def do_hough_opencv(orig, img, lane_angle, n_lines):
     color_orig = orig
     blank_orig = np.zeros_like(orig)
 
+    rho_prev = 0
+    theta_prev = 0
+
     if lines is not None:
-        for i in range(0, n_lines):
+        for i in range(0, 2):
             rho = lines[i][0][0]
             theta = lines[i][0][1]
             a = -(np.cos(theta) / np.sin(theta))
             b = rho / np.sin(theta)
-            color_edges = plot_line(a, b, rho, color_edges, color='white')
-            color_orig = plot_line(a, b, rho, color_orig, color='white', downsampling=DOWNSCALING_FACTOR)
-            blank_orig = plot_line(a, b, rho, blank_orig, color='white', downsampling=DOWNSCALING_FACTOR)
+
+            if i==0 or (np.abs(theta - theta_prev) > (np.pi/180)*MAX_AREA and np.abs(rho - rho_prev) > MAX_AREA):
+                color_edges = plot_line(a, b, rho, color_edges, color='white')
+                color_orig = plot_line(a, b, rho, color_orig, color='white', downsampling=DOWNSCALING_FACTOR)
+                blank_orig = plot_line(a, b, rho, blank_orig, color='white', downsampling=DOWNSCALING_FACTOR)
+
+            theta_prev = theta
+            rho_prev = rho
 
     return color_edges, color_orig, blank_orig[HORIZON:, :]
 
@@ -195,7 +203,6 @@ def draw_lanes(image_path):
         return do_hough_straightline(image, edges, lane_angle=LANE_ANGLE, n_lines=2, max_area=MAX_AREA, plot=False)
     return do_hough_opencv(image, edges, lane_angle=LANE_ANGLE, n_lines=2)
 
-SHOW = False
 
 def run_detection():
     for path in glob.iglob('labelbox-generate-data/input/*.png'):
@@ -203,7 +210,7 @@ def run_detection():
         filename = path.split("/")[-1]
         color_edges, color_orig, blank_orig = draw_lanes(path)
         #cv2.imshow('orig',orig)
-        if SHOW:
+        if SHOW_DETECT:
             cv2.imshow('original',color_orig)
             cv2.imshow('edges', color_edges)
             cv2.imshow('binary', blank_orig)
@@ -214,7 +221,7 @@ def run_detection():
         cv2.imwrite('cam_data/results_binary/'+filename,blank_orig)
         cv2.imwrite('cam_data/results_original/' + filename, color_orig)
 
-SHOW_EVAL = True
+
 def evaluate_results():
     results = []
     for path in glob.iglob('cam_data/results_binary/*.png'):
@@ -276,7 +283,8 @@ def evaluate_results():
         'CANNY_HIGH': CANNY_HIGH,
         'DOWNSCALING_FACTOR': DOWNSCALING_FACTOR,
         'MAX_AREA': MAX_AREA,
-        'LANE_ANGLE': None
+        'LANE_ANGLE': None,
+        'CROP_TOP': CROP_TOP
     }
     avg_df = pd.DataFrame([average_results])
     print(avg_df)
@@ -286,6 +294,8 @@ def evaluate_results():
     return
 
 
+SHOW_DETECT = False
+SHOW_EVAL = False
 
 run_detection()
 evaluate_results()
