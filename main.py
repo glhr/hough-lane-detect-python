@@ -203,6 +203,8 @@ def evaluate_results():
         intersect_size = np.sum(intersect)
         print("--> Score", str(100*intersect_size/result_size)+'%')
 
+        cv2.namedWindow('original', cv2.WINDOW_NORMAL)
+        cv2.namedWindow('intersect', cv2.WINDOW_NORMAL)
         cv2.imshow('original', input_img)
         cv2.imshow('intersect',intersect_img)
         cv2.waitKey(0)

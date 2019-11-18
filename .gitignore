@@ -153,3 +153,7 @@ crashlytics-build.properties
 fabric.properties
 
 cam_data/ir/
+
+cam_data/results_original/
+
+cam_data/results_binary/
