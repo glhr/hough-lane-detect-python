@@ -55,7 +55,7 @@ def is_theta_in_range(theta):
 
 def theta_ranges_from_lane_angle(lane_angle):
     if lane_angle == None:
-        return np.deg2rad(np.arange(-90,90))
+        return np.deg2rad(np.concatenate((np.arange(-70,-10),(np.arange(10,70)))))
     theta_offset = 70
     print('Theta limits:',lane_angle-theta_offset,lane_angle+theta_offset)
     return np.deg2rad(np.concatenate((np.arange(lane_angle-theta_offset,-10),np.arange(10,lane_angle+theta_offset))))
@@ -158,7 +158,7 @@ def draw_lanes(image_path):
     image = cv2.imread(image_path)
     image_preprocessed = preprocessing(image)
     edges = cv2.Canny(image_preprocessed, CANNY_LOW, CANNY_HIGH, None, 3)
-    return do_hough_straightline(image, edges, lane_angle=None, n_lines=2, max_area=5, plot=False)
+    return do_hough_straightline(image, edges, lane_angle=None, n_lines=2, max_area=10, plot=False)
 
 SHOW = False
 
