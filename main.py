@@ -160,14 +160,54 @@ def draw_lanes(image_path):
     edges = cv2.Canny(image_preprocessed, CANNY_LOW, CANNY_HIGH, None, 3)
     return do_hough_straightline(image, edges, lane_angle=None, n_lines=2, max_area=5, plot=False)
 
+SHOW = False
 
-for path in glob.iglob('/home/zacefron/Desktop/golfcart-sensorfusion/sensorfusion/cam_data/ir/*.png'):
-    print(path)
-    color_edges, color_orig, blank_orig = draw_lanes(path)
-    #cv2.imshow('orig',orig)
-    cv2.imshow('original',color_orig)
-    cv2.imshow('edges', color_edges)
-    cv2.imshow('binary', blank_orig)
-    k = cv2.waitKey(0) & 0xFF
-    if k == ord('q'):
-        break
+def run_detection():
+    for path in glob.iglob('labelbox-generate-data/input/*.png'):
+        print(path)
+        filename = path.split("/")[-1]
+        color_edges, color_orig, blank_orig = draw_lanes(path)
+        #cv2.imshow('orig',orig)
+        if SHOW:
+            cv2.imshow('original',color_orig)
+            cv2.imshow('edges', color_edges)
+            cv2.imshow('binary', blank_orig)
+            k = cv2.waitKey(0) & 0xFF
+            if k == ord('q'):
+                break
+        print('cam_data/results_binary/'+filename)
+        cv2.imwrite('cam_data/results_binary/'+filename,blank_orig)
+        cv2.imwrite('cam_data/results_original/' + filename, color_orig)
+
+def evaluate_results():
+    for path in glob.iglob('cam_data/results_binary/*.png'):
+        print(path)
+        filename = path.split("/")[-1]
+        input_img = cv2.imread('cam_data/results_original/' + filename)
+        result_img = cv2.imread(path)
+        if result_img.shape[0] > 600-HORIZON:
+            result_img = result_img[HORIZON:,:]
+        reference_img = cv2.imread('labelbox-generate-data/color_corrected/labeled_'+filename)
+        reference_img = reference_img[220:,:,:]
+        intersect_img = np.zeros_like(reference_img)
+
+        white = np.array([255, 255, 255])
+        grey = np.array([1, 1, 1])
+        mask_result = cv2.inRange(result_img, grey, white)
+        mask_reference = cv2.inRange(reference_img, grey, white)
+        result_size = np.sum(mask_result > 0)
+        reference_size = np.sum(mask_reference > 0)
+
+        intersect = np.logical_and(mask_reference,mask_result)
+        intersect_img[intersect] = (255,255,255)
+        intersect_size = np.sum(intersect)
+        print("--> Score", str(100*intersect_size/result_size)+'%')
+
+        cv2.imshow('original', input_img)
+        cv2.imshow('intersect',intersect_img)
+        cv2.waitKey(0)
+    return
+
+
+run_detection()
+evaluate_results()
