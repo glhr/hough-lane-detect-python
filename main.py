@@ -5,12 +5,15 @@ import numpy as np
 import math
 import glob
 import numexpr as ne
+import pandas as pd
 
 GAUSSIAN_SIZE = 5 # kernel size
 CANNY_LOW = 8
 CANNY_HIGH = 20
 DOWNSCALING_FACTOR = 0.1
 HORIZON = 220
+MAX_AREA = 10
+LANE_ANGLE = None
 
 colors = {
             'white':(255, 255, 255),
@@ -158,7 +161,7 @@ def draw_lanes(image_path):
     image = cv2.imread(image_path)
     image_preprocessed = preprocessing(image)
     edges = cv2.Canny(image_preprocessed, CANNY_LOW, CANNY_HIGH, None, 3)
-    return do_hough_straightline(image, edges, lane_angle=None, n_lines=2, max_area=10, plot=False)
+    return do_hough_straightline(image, edges, lane_angle=LANE_ANGLE, n_lines=2, max_area=MAX_AREA, plot=False)
 
 SHOW = False
 
@@ -179,7 +182,9 @@ def run_detection():
         cv2.imwrite('cam_data/results_binary/'+filename,blank_orig)
         cv2.imwrite('cam_data/results_original/' + filename, color_orig)
 
+SHOW_EVAL = False
 def evaluate_results():
+    results = []
     for path in glob.iglob('cam_data/results_binary/*.png'):
         print(path)
         filename = path.split("/")[-1]
@@ -195,20 +200,35 @@ def evaluate_results():
         grey = np.array([1, 1, 1])
         mask_result = cv2.inRange(result_img, grey, white)
         mask_reference = cv2.inRange(reference_img, grey, white)
+        if not mask_reference.any():
+            continue
         result_size = np.sum(mask_result > 0)
         reference_size = np.sum(mask_reference > 0)
 
         intersect = np.logical_and(mask_reference,mask_result)
         intersect_img[intersect] = (255,255,255)
         intersect_size = np.sum(intersect)
-        print("--> Score", str(100*intersect_size/result_size)+'%')
+        score = intersect_size/result_size
+        print("--> Score", str(100*score)+'%')
 
-        cv2.namedWindow('original', cv2.WINDOW_NORMAL)
-        cv2.namedWindow('intersect', cv2.WINDOW_NORMAL)
-        cv2.imshow('original', input_img)
-        cv2.imshow('intersect',intersect_img)
-        cv2.waitKey(0)
+        result = {'file':filename,
+                  'score':score}
+        results.append(result)
+
+        if SHOW_EVAL:
+            cv2.namedWindow('original', cv2.WINDOW_NORMAL)
+            cv2.namedWindow('intersect', cv2.WINDOW_NORMAL)
+            cv2.imshow('original', input_img)
+            cv2.imshow('intersect',intersect_img)
+            cv2.waitKey(0)
+
+    df = pd.DataFrame(results)
+    average_score = df["score"].mean()
+
+    print(df)
+    print(average_score)
     return
+
 
 
 run_detection()
