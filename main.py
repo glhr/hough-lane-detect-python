@@ -7,7 +7,9 @@ import glob
 import numexpr as ne
 import pandas as pd
 
-HIST_EQUALIZATION = False
+HOUGH_OPENCV = True
+
+HIST_EQUALIZATION = True
 GAUSSIAN_SIZE = 5 # kernel size
 if not HIST_EQUALIZATION:
     CANNY_LOW = 8
@@ -164,12 +166,34 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
 
     return color_edges, color_orig, blank_orig[HORIZON:,:]
 
+def do_hough_opencv(orig, img, lane_angle, n_lines):
+    lines = cv2.HoughLines(img, 1, np.pi / 180, 10, None, 0, 0)
+    color_edges = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+    color_orig = orig
+    blank_orig = np.zeros_like(orig)
+
+    if lines is not None:
+        for i in range(0, n_lines):
+            rho = lines[i][0][0]
+            theta = lines[i][0][1]
+            a = -(np.cos(theta) / np.sin(theta))
+            b = rho / np.sin(theta)
+            color_edges = plot_line(a, b, rho, color_edges, color='white')
+            color_orig = plot_line(a, b, rho, color_orig, color='white', downsampling=DOWNSCALING_FACTOR)
+            blank_orig = plot_line(a, b, rho, blank_orig, color='white', downsampling=DOWNSCALING_FACTOR)
+
+    return color_edges, color_orig, blank_orig[HORIZON:, :]
+
+
+
 
 def draw_lanes(image_path):
     image = cv2.imread(image_path,0)
     image_preprocessed = preprocessing(image)
     edges = cv2.Canny(image_preprocessed, CANNY_LOW, CANNY_HIGH, None, 3)
-    return do_hough_straightline(image, edges, lane_angle=LANE_ANGLE, n_lines=2, max_area=MAX_AREA, plot=False)
+    if not HOUGH_OPENCV:
+        return do_hough_straightline(image, edges, lane_angle=LANE_ANGLE, n_lines=2, max_area=MAX_AREA, plot=False)
+    return do_hough_opencv(image, edges, lane_angle=LANE_ANGLE, n_lines=2)
 
 SHOW = False
 
@@ -245,6 +269,7 @@ def evaluate_results():
     average_results = {
         'score': average_score,
         'n_files':len(df.index),
+        'HOUGH_OPENCV':HOUGH_OPENCV,
         'HIST_EQUALIZATION': HIST_EQUALIZATION,
         'GAUSSIAN_SIZE': GAUSSIAN_SIZE,  # kernel size
         'CANNY_LOW': CANNY_LOW,
@@ -257,7 +282,7 @@ def evaluate_results():
     print(avg_df)
 
     with open('result_stats.csv', 'a') as f:
-        avg_df.to_csv(f, header=False)
+        avg_df.to_csv(f, header=True)
     return
 
 
