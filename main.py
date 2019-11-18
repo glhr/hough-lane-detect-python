@@ -7,9 +7,14 @@ import glob
 import numexpr as ne
 import pandas as pd
 
+HIST_EQUALIZATION = False
 GAUSSIAN_SIZE = 5 # kernel size
-CANNY_LOW = 8
-CANNY_HIGH = 20
+if not HIST_EQUALIZATION:
+    CANNY_LOW = 8
+    CANNY_HIGH = 20
+else:
+    CANNY_LOW = 50
+    CANNY_HIGH = 100
 DOWNSCALING_FACTOR = 0.1
 HORIZON = 220
 MAX_AREA = 10
@@ -26,11 +31,14 @@ colors = {
 
 def preprocessing(image):
     # only keep bottom part of image
+    if HIST_EQUALIZATION:
+        image = cv2.equalizeHist(image)
     img = image[HORIZON:,:]
 
     # downsample image
     h,w = img.shape[:2]
     #desired_w = 150
+
     small_to_large_image_size_ratio = DOWNSCALING_FACTOR
     img = cv2.resize(img,
                        (0,0), # set fx and fy, not the final size
@@ -158,12 +166,12 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
 
 
 def draw_lanes(image_path):
-    image = cv2.imread(image_path)
+    image = cv2.imread(image_path,0)
     image_preprocessed = preprocessing(image)
     edges = cv2.Canny(image_preprocessed, CANNY_LOW, CANNY_HIGH, None, 3)
     return do_hough_straightline(image, edges, lane_angle=LANE_ANGLE, n_lines=2, max_area=MAX_AREA, plot=False)
 
-SHOW = False
+SHOW = True
 
 def run_detection():
     for path in glob.iglob('labelbox-generate-data/input/*.png'):
@@ -227,6 +235,22 @@ def evaluate_results():
 
     print(df)
     print(average_score)
+    average_results = {
+        'score': average_score,
+        'n_files':len(df.index),
+        'HIST_EQUALIZATION': HIST_EQUALIZATION,
+        'GAUSSIAN_SIZE': GAUSSIAN_SIZE,  # kernel size
+        'CANNY_LOW': CANNY_LOW,
+        'CANNY_HIGH': CANNY_HIGH,
+        'DOWNSCALING_FACTOR': DOWNSCALING_FACTOR,
+        'MAX_AREA': MAX_AREA,
+        'LANE_ANGLE': None
+    }
+    avg_df = pd.DataFrame([average_results])
+    print(avg_df)
+
+    with open('result_stats.csv', 'a') as f:
+        avg_df.to_csv(f, header=False)
     return
 
 
