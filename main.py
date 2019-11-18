@@ -15,7 +15,7 @@ if not HIST_EQUALIZATION:
 else:
     CANNY_LOW = 50
     CANNY_HIGH = 100
-DOWNSCALING_FACTOR = 0.1
+DOWNSCALING_FACTOR = 0.2
 HORIZON = 220
 MAX_AREA = 10
 LANE_ANGLE = None
@@ -171,7 +171,7 @@ def draw_lanes(image_path):
     edges = cv2.Canny(image_preprocessed, CANNY_LOW, CANNY_HIGH, None, 3)
     return do_hough_straightline(image, edges, lane_angle=LANE_ANGLE, n_lines=2, max_area=MAX_AREA, plot=False)
 
-SHOW = True
+SHOW = False
 
 def run_detection():
     for path in glob.iglob('labelbox-generate-data/input/*.png'):
@@ -190,7 +190,7 @@ def run_detection():
         cv2.imwrite('cam_data/results_binary/'+filename,blank_orig)
         cv2.imwrite('cam_data/results_original/' + filename, color_orig)
 
-SHOW_EVAL = False
+SHOW_EVAL = True
 def evaluate_results():
     results = []
     for path in glob.iglob('cam_data/results_binary/*.png'):
@@ -198,10 +198,17 @@ def evaluate_results():
         filename = path.split("/")[-1]
         input_img = cv2.imread('cam_data/results_original/' + filename)
         result_img = cv2.imread(path)
+
+
         if result_img.shape[0] > 600-HORIZON:
             result_img = result_img[HORIZON:,:]
         reference_img = cv2.imread('labelbox-generate-data/color_corrected/labeled_'+filename)
         reference_img = reference_img[220:,:,:]
+
+        CROP_TOP = 100
+        reference_img = reference_img[CROP_TOP:,:]
+        result_img = result_img[CROP_TOP:,:]
+
         intersect_img = np.zeros_like(reference_img)
 
         white = np.array([255, 255, 255])
