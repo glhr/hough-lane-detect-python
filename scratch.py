@@ -4,7 +4,7 @@ from functools import reduce
 import operator
 import math
 
-img = cv2.imread('/home/zacefron/hough-lane-detect-python/labelbox-generate-data/input/ircam1573474107535617302.png')
+img = cv2.imread('/home/nemo/Documents/rob7/hough-lane-detect-python/labelbox-generate-data/input/ircam1573474107535617302.png')
 img = img[220:,:]
 small_to_large_image_size_ratio = 0.2
 img = cv2.resize(img,
@@ -43,21 +43,21 @@ line2 = lambda x: a[1]*x+b[1]
 y1 = line1(x)
 y2 = line2(x)
 
-points1 = np.array([[[xi, yi]] for xi, yi in zip(x, y1) if (0<=xi<w and 0<=yi<h)]).astype(np.int32)
-points2 = np.array([[[xi, yi]] for xi, yi in zip(x, y2) if (0<=xi<w and 0<=yi<h)]).astype(np.int32)
+points1 = np.array([(xi, yi) for xi, yi in zip(x, y1) if (0<=xi<w and 0<=yi<h)]).astype(np.int32)
+points2 = np.array([(xi, yi) for xi, yi in zip(x, y2) if (0<=xi<w and 0<=yi<h)]).astype(np.int32)
 
-minpt[0] = min(points1, key = lambda t: t[0][0])
-maxpt[0] = max(points1, key = lambda t: t[0][0])
-minpt[1] = min(points2, key = lambda t: t[0][0])
-maxpt[1] = max(points2, key = lambda t: t[0][0])
+minpt[0] = min(points1, key = lambda t: t[0])
+maxpt[0] = max(points1, key = lambda t: t[0])
+minpt[1] = min(points2, key = lambda t: t[0])
+maxpt[1] = max(points2, key = lambda t: t[0])
 
 print(minpt, maxpt)
-if maxpt[0][0][0] == w-1 and maxpt[0][0][1] < h-1:
-    corners1 = [[[w-1,h-1]]]
+if maxpt[0][0] == w-1 and maxpt[0][1] < h-1:
+    corners1 = [(w-1,h-1)]
     use_corners1 = True
 else: use_corners1 = False
-if minpt[1][0][0] == 0 and minpt[1][0][1] < h-1:
-    corners2 = [[[0,h-1]]]
+if minpt[1][0] == 0 and minpt[1][1] < h-1:
+    corners2 = [(0,h-1)]
     use_corners2 = True
 else: use_corners2 = False
 
@@ -71,8 +71,11 @@ elif use_corners2:
 else:
     points = np.concatenate((minpt, maxpt))
 
-center = tuple(map(operator.truediv, reduce(lambda x, y: map(operator.add, x, y), points[0]), [len(points[0])] * 2))
-points = np.array(sorted(points[0], key=lambda coord: (-135 - math.degrees(math.atan2(*tuple(map(operator.sub, coord, center))[::-1]))) % 360))
+
+print(points)
+center = tuple(map(operator.truediv, reduce(lambda x, y: map(operator.add, x, y), points), [len(points)] * 2))
+print(center)
+points = np.array(sorted(points, key=lambda coord: (-135 - math.degrees(math.atan2(*tuple(map(operator.sub, coord, center))[::-1]))) % 360))
 
 polynomialgon = img.copy()
 cv2.fillPoly(polynomialgon, [points], color=[255,255,255])
