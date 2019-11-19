@@ -20,7 +20,8 @@ else:
 DOWNSCALING_FACTOR = 0.2
 HORIZON = 220
 MAX_AREA = 21
-LANE_ANGLE = None
+LANE_ANGLE = 0
+THETA_OFFSET = 70
 
 colors = {
             'white':(255, 255, 255),
@@ -69,8 +70,8 @@ def is_theta_in_range(theta):
 def theta_ranges_from_lane_angle(lane_angle):
     if lane_angle == None:
         return np.deg2rad(np.concatenate((np.arange(-70,-10),(np.arange(10,70)))))
-    theta_offset = 70
-    print('Theta limits:',lane_angle-theta_offset,lane_angle+theta_offset)
+    theta_offset = THETA_OFFSET
+    # print('Theta limits:',lane_angle-theta_offset,lane_angle+theta_offset)
     return np.deg2rad(np.concatenate((np.arange(lane_angle-theta_offset,-10),np.arange(10,lane_angle+theta_offset))))
 
 def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
@@ -175,18 +176,26 @@ def do_hough_opencv(orig, img, lane_angle, n_lines):
     rho_prev = 0
     theta_prev = 0
 
+    n = 0
     if lines is not None:
-        for i in range(0, 2):
+        for i in range(0, len(lines)-1):
             rho = lines[i][0][0]
             theta = lines[i][0][1]
+            if theta == 0:
+                continue
             a = -(np.cos(theta) / np.sin(theta))
             b = rho / np.sin(theta)
 
-            if i==0 or (np.abs(theta - theta_prev) > (np.pi/180)*MAX_AREA and np.abs(rho - rho_prev) > MAX_AREA):
+            # (np.abs(theta - theta_prev) > (np.pi/180)*MAX_AREA and np.abs(rho - rho_prev) > MAX_AREA))
+            if ((lane_angle - THETA_OFFSET < np.rad2deg(theta)) and (np.rad2deg(theta) < lane_angle + THETA_OFFSET)):
+                print(np.rad2deg(theta),lane_angle + THETA_OFFSET,lane_angle - THETA_OFFSET)
                 color_edges = plot_line(a, b, rho, color_edges, color='white')
                 color_orig = plot_line(a, b, rho, color_orig, color='white', downsampling=DOWNSCALING_FACTOR)
                 blank_orig = plot_line(a, b, rho, blank_orig, color='white', downsampling=DOWNSCALING_FACTOR)
+                n += 1
 
+            if n == n_lines*5:
+                break
             theta_prev = theta
             rho_prev = rho
 
@@ -294,8 +303,8 @@ def evaluate_results():
     return
 
 
-SHOW_DETECT = False
+SHOW_DETECT = True
 SHOW_EVAL = False
 
 run_detection()
-evaluate_results()
+#evaluate_results()
