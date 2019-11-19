@@ -178,7 +178,7 @@ def do_hough_opencv(orig, img, lane_angle, n_lines):
 
     n = 0
     if lines is not None:
-        for i in range(0, len(lines)-1):
+        for i in range(0, n_lines):
             rho = lines[i][0][0]
             theta = lines[i][0][1]
             if theta == 0:
@@ -187,12 +187,12 @@ def do_hough_opencv(orig, img, lane_angle, n_lines):
             b = rho / np.sin(theta)
 
             # (np.abs(theta - theta_prev) > (np.pi/180)*MAX_AREA and np.abs(rho - rho_prev) > MAX_AREA))
-            if ((lane_angle - THETA_OFFSET < np.rad2deg(theta)) and (np.rad2deg(theta) < lane_angle + THETA_OFFSET)):
-                print(np.rad2deg(theta),lane_angle + THETA_OFFSET,lane_angle - THETA_OFFSET)
-                color_edges = plot_line(a, b, rho, color_edges, color='white')
-                color_orig = plot_line(a, b, rho, color_orig, color='white', downsampling=DOWNSCALING_FACTOR)
-                blank_orig = plot_line(a, b, rho, blank_orig, color='white', downsampling=DOWNSCALING_FACTOR)
-                n += 1
+            # if ((lane_angle - THETA_OFFSET < np.rad2deg(theta)) and (np.rad2deg(theta) < lane_angle + THETA_OFFSET)):
+            print(rho,theta,lane_angle + THETA_OFFSET,lane_angle - THETA_OFFSET)
+            color_edges = plot_line(a, b, rho, color_edges, color='white')
+            color_orig = plot_line(a, b, rho, color_orig, color='white', downsampling=DOWNSCALING_FACTOR)
+            blank_orig = plot_line(a, b, rho, blank_orig, color='white', downsampling=DOWNSCALING_FACTOR)
+            n += 1
 
             if n == n_lines*5:
                 break
