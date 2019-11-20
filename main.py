@@ -6,6 +6,9 @@ import math
 import glob
 import numexpr as ne
 import pandas as pd
+from functools import reduce
+import operator
+import math
 
 HOUGH_OPENCV = True
 
@@ -52,12 +55,72 @@ def preprocessing(image):
     blurred = cv2.GaussianBlur(img, (GAUSSIAN_SIZE, GAUSSIAN_SIZE), 0)
     return blurred
 
+def get_intersect(a1, a2, b1, b2):
+    """
+    Returns the point of intersection of the lines passing through a2,a1 and b2,b1.
+    a1: [x, y] a point on the first line
+    a2: [x, y] another point on the first line
+    b1: [x, y] a point on the second line
+    b2: [x, y] another point on the second line
+    """
+    s = np.vstack([a1,a2,b1,b2])        # s for stacked
+    h = np.hstack((s, np.ones((4, 1)))) # h for homogeneous
+    l1 = np.cross(h[0], h[1])           # get first line
+    l2 = np.cross(h[2], h[3])           # get second line
+    x, y, z = np.cross(l1, l2)          # point of intersection
+    if z == 0:                          # lines are parallel
+        return (float('inf'), float('inf'))
+    return (x/z, y/z)
+
+def fill_road_area(img,a,b,downsampling):
+    h, w = img.shape[:2]
+    x = np.arange(w)
+
+    if downsampling < 1:
+        b = (b / downsampling) + HORIZON
+        print(b)
+
+    line1 = lambda x: a[0]*x+b[0]
+    line2 = lambda x: a[1]*x+b[1]
+    y1 = line1(x)
+    y2 = line2(x)
+
+    points1 = np.array([(xi, yi) for xi, yi in zip(x, y1) if (0<=xi<w and 0<=yi<h)]).astype(np.int32)
+    points2 = np.array([(xi, yi) for xi, yi in zip(x, y2) if (0<=xi<w and 0<=yi<h)]).astype(np.int32)
+
+    minpt = [None, None]
+    maxpt = [None, None]
+    minpt[0] = min(points1, key = lambda t: t[1])
+    maxpt[0] = max(points1, key = lambda t: t[1])
+    minpt[1] = min(points2, key = lambda t: t[1])
+    maxpt[1] = max(points2, key = lambda t: t[1])
+
+    intersect = get_intersect(minpt[0],maxpt[0],minpt[1],maxpt[1])
+    print(intersect)
+    if intersect[0] < 0 or intersect[1] < 0 or intersect[0] > w-1 or intersect[1] > h-1:
+        points = np.concatenate((points1, points2))
+    elif intersect[0] == float("inf") or intersect[1] == float("inf"):
+        points = np.concatenate((points1,points2))
+    else:
+        points = np.concatenate(([maxpt[0]], [maxpt[1]], [intersect]))
+        print(points)
+
+
+    # print(points)
+    center = tuple(map(operator.truediv, reduce(lambda x, y: map(operator.add, x, y), points), [len(points)] * 2))
+    # print(center)
+    points = np.array(sorted(points, key=lambda coord: (-135 - math.degrees(math.atan2(*tuple(map(operator.sub, coord, center))[::-1]))) % 360))
+
+    polynomialgon = img.copy()
+    try: cv2.fillPoly(polynomialgon, [points], color=[255,255,255])
+    except: cv2.fillPoly(polynomialgon, np.int32([points]), color=[255,255,255])
+    return polynomialgon
 
 def plot_line(a, b, rho, img, opacity=0.8, color='red',downsampling=1):
     y_max, x_max = img.shape[:2]
     #a = a * downsampling
     if downsampling < 1:
-        b = (b / downsampling)+HORIZON
+        b = (b / downsampling) + HORIZON
     pt1 = (0, int(a * 0 + b))
     pt2 = (x_max, int(a * x_max + b))
     cv2.line(img, pt1, pt2, colors[color], 1, cv2.LINE_AA)
@@ -177,12 +240,16 @@ def do_hough_opencv(orig, img, lane_angle, n_lines):
     theta_prev = 0
 
     n = 0
+    a_lanes = np.zeros(n_lines)
+    b_lanes = np.zeros(n_lines)
+
     if lines is not None:
         for i in range(0, n_lines):
             rho = lines[i][0][0]
             theta = lines[i][0][1]
             if theta == 0:
                 continue
+            print(rho,theta)
             a = -(np.cos(theta) / np.sin(theta))
             b = rho / np.sin(theta)
 
@@ -191,15 +258,16 @@ def do_hough_opencv(orig, img, lane_angle, n_lines):
             print(rho,theta,lane_angle + THETA_OFFSET,lane_angle - THETA_OFFSET)
             color_edges = plot_line(a, b, rho, color_edges, color='white')
             color_orig = plot_line(a, b, rho, color_orig, color='white', downsampling=DOWNSCALING_FACTOR)
-            blank_orig = plot_line(a, b, rho, blank_orig, color='white', downsampling=DOWNSCALING_FACTOR)
+            #blank_orig = plot_line(a, b, rho, blank_orig, color='white', downsampling=DOWNSCALING_FACTOR)
+            a_lanes[n] = a
+            b_lanes[n] = b
             n += 1
 
-            if n == n_lines*5:
-                break
             theta_prev = theta
             rho_prev = rho
-
-    return color_edges, color_orig, blank_orig[HORIZON:, :]
+    if n == 2:
+        polynomialgon = fill_road_area(blank_orig, a=a_lanes, b=b_lanes, downsampling=DOWNSCALING_FACTOR)
+    return color_edges, color_orig, blank_orig[HORIZON:, :], polynomialgon[HORIZON:, :]
 
 
 
@@ -217,12 +285,12 @@ def run_detection():
     for path in glob.iglob('labelbox-generate-data/input/*.png'):
         print(path)
         filename = path.split("/")[-1]
-        color_edges, color_orig, blank_orig = draw_lanes(path)
+        color_edges, color_orig, blank_orig, roadarea = draw_lanes(path)
         #cv2.imshow('orig',orig)
         if SHOW_DETECT:
             cv2.imshow('original',color_orig)
             cv2.imshow('edges', color_edges)
-            cv2.imshow('binary', blank_orig)
+            cv2.imshow('binary', roadarea)
             k = cv2.waitKey(0) & 0xFF
             if k == ord('q'):
                 break
