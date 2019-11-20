@@ -249,13 +249,13 @@ def do_hough_opencv(orig, img, lane_angle, n_lines):
             theta = lines[i][0][1]
             if theta == 0:
                 continue
-            print(rho,theta)
+            # print(rho,theta)
             a = -(np.cos(theta) / np.sin(theta))
             b = rho / np.sin(theta)
 
             # (np.abs(theta - theta_prev) > (np.pi/180)*MAX_AREA and np.abs(rho - rho_prev) > MAX_AREA))
             # if ((lane_angle - THETA_OFFSET < np.rad2deg(theta)) and (np.rad2deg(theta) < lane_angle + THETA_OFFSET)):
-            print(rho,theta,lane_angle + THETA_OFFSET,lane_angle - THETA_OFFSET)
+            # print(rho,theta,lane_angle + THETA_OFFSET,lane_angle - THETA_OFFSET)
             color_edges = plot_line(a, b, rho, color_edges, color='white')
             color_orig = plot_line(a, b, rho, color_orig, color='white', downsampling=DOWNSCALING_FACTOR)
             #blank_orig = plot_line(a, b, rho, blank_orig, color='white', downsampling=DOWNSCALING_FACTOR)
@@ -283,7 +283,7 @@ def draw_lanes(image_path):
 
 def run_detection():
     for path in glob.iglob('labelbox-generate-data/input/*.png'):
-        print(path)
+        # print(path)
         filename = path.split("/")[-1]
         color_edges, color_orig, blank_orig, roadarea = draw_lanes(path)
         #cv2.imshow('orig',orig)
@@ -295,7 +295,7 @@ def run_detection():
             if k == ord('q'):
                 break
         print('cam_data/results_binary/'+filename)
-        cv2.imwrite('cam_data/results_binary/'+filename,blank_orig)
+        cv2.imwrite('cam_data/results_binary/'+filename,roadarea)
         cv2.imwrite('cam_data/results_original/' + filename, color_orig)
 
 
@@ -310,10 +310,12 @@ def evaluate_results():
 
         if result_img.shape[0] > 600-HORIZON:
             result_img = result_img[HORIZON:,:]
-        reference_img = cv2.imread('labelbox-generate-data/color_corrected/labeled_'+filename)
-        reference_img = reference_img[220:,:,:]
+        try:
+            reference_img = cv2.imread('labelbox-generate-data/color_corrected/labeled_'+filename)
+            reference_img = reference_img[220:,:,:]
+        except: continue
 
-        CROP_TOP = 100
+        CROP_TOP = 0
         reference_img = reference_img[CROP_TOP:,:]
         result_img = result_img[CROP_TOP:,:]
 
@@ -331,7 +333,7 @@ def evaluate_results():
         intersect = np.logical_and(mask_reference,mask_result)
         intersect_img[intersect] = (255,255,255)
         intersect_size = np.sum(intersect)
-        score = intersect_size/result_size
+        score = intersect_size/reference_size
         print("--> Score", str(100*score)+'%')
 
         result = {'file':filename,
@@ -371,8 +373,8 @@ def evaluate_results():
     return
 
 
-SHOW_DETECT = True
-SHOW_EVAL = False
+SHOW_DETECT = False
+SHOW_EVAL = True
 
-run_detection()
-#evaluate_results()
+#run_detection()
+evaluate_results()
