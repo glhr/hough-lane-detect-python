@@ -72,16 +72,18 @@ def get_intersect(a1, a2, b1, b2):
         return (float('inf'), float('inf'))
     return (x/z, y/z)
 
-def fill_road_area(img,a,b,downsampling):
+def fill_road_area(orig,a,b,downsampling):
+    PADDING = orig.shape[:2][1]
+    img = np.pad(orig, ((PADDING,PADDING),(PADDING,PADDING)), mode='constant')
     h, w = img.shape[:2]
     x = np.arange(w)
 
     if downsampling < 1:
-        b = (b / downsampling) + HORIZON
+        b = (b / downsampling) + HORIZON + PADDING
         print(b)
 
-    line1 = lambda x: a[0]*x+b[0]
-    line2 = lambda x: a[1]*x+b[1]
+    line1 = lambda x: a[0]*(x-PADDING)+b[0]
+    line2 = lambda x: a[1]*(x-PADDING)+b[1]
     y1 = line1(x)
     y2 = line2(x)
 
@@ -112,8 +114,11 @@ def fill_road_area(img,a,b,downsampling):
     points = np.array(sorted(points, key=lambda coord: (-135 - math.degrees(math.atan2(*tuple(map(operator.sub, coord, center))[::-1]))) % 360))
 
     polynomialgon = img.copy()
-    try: cv2.fillPoly(polynomialgon, [points], color=[255,255,255])
-    except: cv2.fillPoly(polynomialgon, np.int32([points]), color=[255,255,255])
+    cv2.fillPoly(polynomialgon, np.int32([points]), color=[255,255,255])
+
+    polynomialgon = polynomialgon[PADDING:-PADDING,PADDING:-PADDING]
+    print(polynomialgon.shape,orig.shape)
+
     return polynomialgon
 
 def plot_line(a, b, rho, img, opacity=0.8, color='red',downsampling=1):
@@ -374,7 +379,7 @@ def evaluate_results():
 
 
 SHOW_DETECT = False
-SHOW_EVAL = True
+SHOW_EVAL = False
 
-#run_detection()
-evaluate_results()
+run_detection()
+#evaluate_results()
