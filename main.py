@@ -10,7 +10,7 @@ from functools import reduce
 import operator
 import math
 
-HOUGH_OPENCV = True
+HOUGH_OPENCV = False
 
 HIST_EQUALIZATION = False
 GAUSSIAN_SIZE = 5 # kernel size
@@ -148,6 +148,8 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
     color_orig = orig
     blank_orig = np.zeros_like(orig)
 
+
+
     # img = img[10:-10][10:-10] # ignore image boundaries
     # print("-------------------------------------")
     max_iterations = 20
@@ -156,6 +158,9 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
     h_orig, w_orig = orig.shape[:2]
     middle = w / 2
     print("Image center:",middle)
+    a_lanes = np.zeros(n_lines)
+    b_lanes = np.zeros(n_lines)
+
     diag = np.ceil(np.hypot(h, w))
     # print(f"IMG dimensions: {img.shape} max. intensity: {np.max(img)}")
 
@@ -207,6 +212,8 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
             color_orig =    plot_line(a, b, rho, color_orig, color='green', downsampling=DOWNSCALING_FACTOR)
             blank_orig = plot_line(a, b, rho, blank_orig, color='white', downsampling=DOWNSCALING_FACTOR)
             #accumulator = remove_area_around_max(accumulator,max_area,(rho_index,theta_index))
+            a_lanes[n - 1] = a
+            b_lanes[n - 1] = b
             n += 1
         elif n == 2:
             if      (lane_side[n-1] != lane_side[n-2]) and \
@@ -215,6 +222,8 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
                 lane_color = 'blue'
                 color_orig = plot_line(a, b, rho, color_orig, color=lane_color, downsampling=DOWNSCALING_FACTOR)
                 blank_orig = plot_line(a, b, rho, blank_orig, color='white', downsampling=DOWNSCALING_FACTOR)
+                a_lanes[n-1] = a
+                b_lanes[n-1] = b
                 n += 1
             else:
                 lane_color = 'red'
@@ -233,7 +242,8 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
 
     print("Solved in",iterations,"iterations")
 
-    return color_edges, color_orig, blank_orig[HORIZON:,:]
+    polynomialgon = fill_road_area(blank_orig, a=a_lanes, b=b_lanes, downsampling=DOWNSCALING_FACTOR)
+    return color_edges, color_orig, blank_orig[HORIZON:, :], polynomialgon[HORIZON:, :]
 
 def do_hough_opencv(orig, img, lane_angle, n_lines):
     lines = cv2.HoughLines(img, 1, np.pi / 180, 10, None, 0, 0)
@@ -379,7 +389,7 @@ def evaluate_results():
 
 
 SHOW_DETECT = False
-SHOW_EVAL = False
+SHOW_EVAL = True
 
-run_detection()
-#evaluate_results()
+#run_detection()
+evaluate_results()
