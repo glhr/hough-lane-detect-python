@@ -1,13 +1,12 @@
 import matplotlib.pyplot as plt
-import numpy as np
-from PIL import Image
+import PIL.Image
 import glob
 import cv2 # for testing only
 
 # local imports below
-from gaussian import do_gaussian
-from canny import do_canny
-from hough import do_hough_straightline, do_hough_curve
+from houghlanedetect.gaussian import do_gaussian
+from houghlanedetect.canny import do_canny
+from houghlanedetect.hough import do_hough_straightline, do_hough_curve
 
 PLOT_INTERMEDIARY = True # display results of each step
 PLOT_RESULTS = True # save final result in result folder
@@ -19,11 +18,30 @@ CANNY_ADAPTIVE_THRESH = True # set to true to use median-based threshold instead
 ACCUMULATOR_MAX_AREA = 10 # area around maximum to set to 0 in accumulator before looking for next candidate
 N_LINES = 2 # number of lanes
 
+def detect_lane_from_img(orig_img):
+    img = orig_img[:,:,0] # only keep one channel
+    img = img[220:,:]
+
+    # downsample image
+    h,w = img.shape[:2]
+    desired_w = 250
+    small_to_large_image_size_ratio = desired_w/w
+    img = cv2.resize(img,
+                       (0,0), # set fx and fy, not the final size
+                       fx=small_to_large_image_size_ratio,
+                       fy=small_to_large_image_size_ratio,
+                       interpolation=cv2.INTER_LINEAR)
+    blurred_cv = cv2.GaussianBlur(img,ksize=(5,5),sigmaX=3)
+    edges = do_canny(blurred_cv, CANNY_ADAPTIVE_THRESH, low=CANNY_LOW, high=CANNY_HIGH, plot=False)
+
+
+    return edges
+
 
 def detect_lane(img_path):
     print('-->',img_path)
     # open image in grayscale
-    orig_img = np.array(Image.open(img_path).convert("L"))
+    orig_img = np.array(PIL.Image.open(img_path).convert("L"))
 
     # only keep bottom part of image
     img = orig_img[220:,:]
