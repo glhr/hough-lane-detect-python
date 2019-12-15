@@ -6,7 +6,7 @@ import numpy as np
 import numexpr as ne
 
 # local imports below
-from houghlanedetect.gaussian import do_gaussian
+# from houghlanedetectpython.gaussian import do_gaussian
 # from houghlanedetect.canny import do_canny
 # from houghlanedetect.hough import do_hough_straightline, do_hough_curve
 
@@ -54,6 +54,18 @@ colors = {
             'yellow':(255,255,0)
 }
 
+
+def angle_from_center(img,end_point):
+    h,w = img.shape[:2]
+    x, y = end_point
+    center_y, center_x = h-y,x-w/2
+    if center_x == 0:
+        angle = 0
+    else: angle = np.round(np.rad2deg(np.arctan2(center_y,center_x))-90.0,decimals=1)
+
+    return angle
+
+
 def preprocessing(image):
     # only keep bottom part of image
     img = image[HORIZON:,:]
@@ -90,9 +102,11 @@ def theta_ranges_from_lane_angle(lane_angle):
     if lane_angle == None:
         return np.deg2rad(np.concatenate((np.arange(-70,-10),np.arange(10,70))))
         # return np.deg2rad(np.arange(-90,90))
-    theta_offset = 70
-    print('Theta limits:',lane_angle-theta_offset,lane_angle+theta_offset)
-    return np.deg2rad(np.concatenate((np.arange(lane_angle-theta_offset,-10),np.arange(10,lane_angle+theta_offset))))
+    lane_angle = -lane_angle
+    offset_min = 20
+    offset_max = 60
+    # print('Theta limits:',lane_angle-theta_offset,lane_angle+theta_offset)
+    return np.deg2rad(np.concatenate((np.arange(lane_angle-offset_max,lane_angle-offset_min),np.arange(lane_angle+offset_min,lane_angle+offset_max))))
 
 def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
     # Copy edges to the images that will display the results in BGR
@@ -107,11 +121,12 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
     h, w = img.shape
     h_orig, w_orig = orig.shape[:2]
     middle = w / 2
-    print("Image center:",middle)
+    # print("Image center:",middle)
     diag = np.ceil(np.hypot(h, w))
     # print(f"IMG dimensions: {img.shape} max. intensity: {np.max(img)}")
 
-    thetas = theta_ranges_from_lane_angle(lane_angle)
+    # thetas = theta_ranges_from_lane_angle(lane_angle)
+    thetas = np.deg2rad(np.concatenate((np.arange(-70, -10), np.arange(10, 70))))
     rhos = np.linspace(-diag, diag, diag * 2.0)
 
     # print(f"diagonal: {diag}")
@@ -151,27 +166,37 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
         lane_end[n-1] = -b / a
         lane_side[n-1] = (lane_start[n-1] < middle)
 
-        print(f"- Lane {n}: Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
-        print(f"- Lane {n}: Theta {np.rad2deg(ang):.2f} - Rho {rho:.2f}")
+        # print(f"- Lane {n}: Cartesion form (ax+b): {a:.2f} * x + {b:.2f}")
+        # print(f"- Lane {n}: Theta {np.rad2deg(ang):.2f} - Rho {rho:.2f}")
+
+        ang_from_center = angle_from_center(color_edges, (lane_end[n - 1], 0))
 
         if n == 1:
-            color_edges =   plot_line(a, b, rho, color_edges, color='green')
-            color_orig =    plot_line(a, b, rho, color_orig, color='green', downsampling=DOWNSCALING_FACTOR)
-            blank_orig = plot_line(a, b, rho, blank_orig, color='white', downsampling=DOWNSCALING_FACTOR)
-            #accumulator = remove_area_around_max(accumulator,max_area,(rho_index,theta_index))
-            n += 1
+            print(np.rad2deg(ang))
+            if abs(ang_from_center-lane_angle) < 20:
+                color_edges =   plot_line(a, b, rho, color_edges, color='green')
+                color_orig =    plot_line(a, b, rho, color_orig, color='green', downsampling=DOWNSCALING_FACTOR)
+                blank_orig = plot_line(a, b, rho, blank_orig, color='white', downsampling=DOWNSCALING_FACTOR)
+                #accumulator = remove_area_around_max(accumulator,max_area,(rho_index,theta_index))
+                print("lane 1:",np.rad2deg(ang))
+                print("------>", ang_from_center)
+                n += 1
         elif n == 2:
-            if      (lane_side[n-1] != lane_side[n-2]) and \
-                    ((lane_end[n-1] > lane_end[n-2] and lane_start[n-1] > lane_start[n-2]) \
-                or  (lane_end[n-1] < lane_end[n-2] and lane_start[n-1] < lane_start[n-2])):
+            # if      (lane_side[n-1] != lane_side[n-2]) and \
+            #         ((lane_end[n-1] > lane_end[n-2] and lane_start[n-1] > lane_start[n-2]) \
+            #     or  (lane_end[n-1] < lane_end[n-2] and lane_start[n-1] < lane_start[n-2])):
+            if abs(ang_from_center - lane_angle) < 20:
                 lane_color = 'blue'
                 color_orig = plot_line(a, b, rho, color_orig, color=lane_color, downsampling=DOWNSCALING_FACTOR)
                 blank_orig = plot_line(a, b, rho, blank_orig, color='white', downsampling=DOWNSCALING_FACTOR)
+                print("lane 2:",np.rad2deg(ang))
+                print("------>", ang_from_center)
+                color_edges = plot_line(a, b, rho, color_edges, color=lane_color)
                 n += 1
             else:
                 lane_color = 'red'
                 #accumulator = remove_area_around_max(accumulator,max_area,(rho_index,theta_index))
-            color_edges =   plot_line(a, b, rho, color_edges, color=lane_color)
+
 
         for i in range(np.int(rho_index - max_area), np.int(rho_index + max_area + 1)):
             try:
@@ -183,7 +208,7 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
 
         iterations += 1
 
-    print("Solved in",iterations,"iterations")
+    # print("Solved in",iterations,"iterations")
 
     return color_edges, color_orig, blank_orig[HORIZON:,:]
 
