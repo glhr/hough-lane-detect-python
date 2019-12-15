@@ -65,6 +65,11 @@ def angle_from_center(img,end_point):
 
     return angle
 
+def lanes_intersect(lane_end, lane_start):
+    if (lane_end[1] > lane_end[0] and lane_start[1] > lane_start[0]) or (lane_end[1] < lane_end[0] and lane_start[1] < lane_start[0]):
+        return False
+    return True
+
 
 def preprocessing(image):
     # only keep bottom part of image
@@ -103,10 +108,67 @@ def theta_ranges_from_lane_angle(lane_angle):
         return np.deg2rad(np.concatenate((np.arange(-70,-10),np.arange(10,70))))
         # return np.deg2rad(np.arange(-90,90))
     lane_angle = -lane_angle
-    offset_min = 20
-    offset_max = 60
+    offset_min = 30
+    offset_max = 30
     # print('Theta limits:',lane_angle-theta_offset,lane_angle+theta_offset)
     return np.deg2rad(np.concatenate((np.arange(lane_angle-offset_max,lane_angle-offset_min),np.arange(lane_angle+offset_min,lane_angle+offset_max))))
+
+def is_theta_in_lidar_range(theta,lane_angle):
+    offset_min = 10
+    offset_max = 60
+    theta = np.rad2deg(theta) - 90
+    # print(theta)
+    if (theta > lane_angle-offset_max and theta < lane_angle-offset_min) or (theta > lane_angle+offset_min and theta < lane_angle+offset_max):
+        return True
+    return False
+
+def do_hough_opencv(orig, img, lane_angle, n_lines=2):
+    h, w = img.shape
+    h_orig, w_orig = orig.shape[:2]
+    middle = w / 2
+
+    lines = cv2.HoughLines(img, 1, np.pi / 180, 10, None, 0, 0)
+    color_edges = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+    color_orig = orig
+    blank_orig = np.zeros_like(orig)
+
+    lane_start = [0,0]
+    lane_end = [0,0]
+    lane_pos = [0,0]
+    lane_side = [0,0]
+
+    n = 1
+    if lane_angle is not None:
+        lane_angle = -lane_angle
+
+    if lines is not None:
+        for i in range(0, len(lines)):
+            if n > n_lines:
+                break
+            rho = lines[i][0][0]
+            theta = lines[i][0][1]
+            a = -(np.cos(theta) / np.sin(theta))
+            b = rho / np.sin(theta)
+
+            # print(a)
+
+            lane_start[n - 1] = ((h - 1) - b) / a
+            lane_end[n - 1] = -b / a
+            lane_side[n - 1] = (lane_start[n - 1] < middle)
+            ang_from_center = angle_from_center(color_edges, (lane_end[n - 1], 0))
+
+            if (lane_angle is None) or (is_theta_in_lidar_range(theta,-lane_angle) and abs(ang_from_center - lane_angle) < 30):
+                if (n==1 or (not lanes_intersect(lane_end,lane_start) and (lane_side[n-1] != lane_side[n-2]) and abs(lane_start[n - 1] - lane_start[n - 2])>100 and abs(lane_start[n - 1] - lane_start[n - 2])<w-1)):
+                    if n == 2:      lane_color = 'blue'
+                    elif n == 1:    lane_color = 'green'
+                    print("LANE ANGLE", lane_angle, "--> lane",n,"ang from center:",ang_from_center)
+                    color_edges = plot_line(a, b, rho, color_edges, color=lane_color)
+                    color_orig = plot_line(a, b, rho, color_orig, color=lane_color, downsampling=DOWNSCALING_FACTOR)
+                    blank_orig = plot_line(a, b, rho, blank_orig, color=lane_color, downsampling=DOWNSCALING_FACTOR)
+                    n += 1
+
+    return color_edges, color_orig, blank_orig[HORIZON:, :]
+
 
 def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
     # Copy edges to the images that will display the results in BGR
@@ -171,9 +233,9 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
 
         ang_from_center = angle_from_center(color_edges, (lane_end[n - 1], 0))
 
-        if n == 1:
-            print(np.rad2deg(ang))
-            if abs(ang_from_center-lane_angle) < 20:
+        if (lane_angle is None) or (abs(ang_from_center - lane_angle) < 20):
+            if n == 1:
+                print(np.rad2deg(ang))
                 color_edges =   plot_line(a, b, rho, color_edges, color='green')
                 color_orig =    plot_line(a, b, rho, color_orig, color='green', downsampling=DOWNSCALING_FACTOR)
                 blank_orig = plot_line(a, b, rho, blank_orig, color='white', downsampling=DOWNSCALING_FACTOR)
@@ -181,21 +243,20 @@ def do_hough_straightline(orig, img, lane_angle, n_lines, max_area, plot=False):
                 print("lane 1:",np.rad2deg(ang))
                 print("------>", ang_from_center)
                 n += 1
-        elif n == 2:
-            # if      (lane_side[n-1] != lane_side[n-2]) and \
-            #         ((lane_end[n-1] > lane_end[n-2] and lane_start[n-1] > lane_start[n-2]) \
-            #     or  (lane_end[n-1] < lane_end[n-2] and lane_start[n-1] < lane_start[n-2])):
-            if abs(ang_from_center - lane_angle) < 20:
-                lane_color = 'blue'
-                color_orig = plot_line(a, b, rho, color_orig, color=lane_color, downsampling=DOWNSCALING_FACTOR)
-                blank_orig = plot_line(a, b, rho, blank_orig, color='white', downsampling=DOWNSCALING_FACTOR)
-                print("lane 2:",np.rad2deg(ang))
-                print("------>", ang_from_center)
-                color_edges = plot_line(a, b, rho, color_edges, color=lane_color)
-                n += 1
-            else:
-                lane_color = 'red'
-                #accumulator = remove_area_around_max(accumulator,max_area,(rho_index,theta_index))
+            elif n == 2:
+                if      (lane_side[n-1] != lane_side[n-2]) and \
+                        ((lane_end[n-1] > lane_end[n-2] and lane_start[n-1] > lane_start[n-2]) \
+                    or  (lane_end[n-1] < lane_end[n-2] and lane_start[n-1] < lane_start[n-2])):
+                    lane_color = 'blue'
+                    color_orig = plot_line(a, b, rho, color_orig, color=lane_color, downsampling=DOWNSCALING_FACTOR)
+                    blank_orig = plot_line(a, b, rho, blank_orig, color='white', downsampling=DOWNSCALING_FACTOR)
+                    print("lane 2:",np.rad2deg(ang))
+                    print("------>", ang_from_center)
+                    color_edges = plot_line(a, b, rho, color_edges, color=lane_color)
+                    n += 1
+                else:
+                    lane_color = 'red'
+                    #accumulator = remove_area_around_max(accumulator,max_area,(rho_index,theta_index))
 
 
         for i in range(np.int(rho_index - max_area), np.int(rho_index + max_area + 1)):
@@ -217,7 +278,8 @@ def draw_lanes_from_img(orig_img, lane_angle = None):
     image = orig_img[:, :, 0]
     image_preprocessed = preprocessing(image)
     edges = cv2.Canny(image_preprocessed, CANNY_LOW, CANNY_HIGH, None, 3)
-    color_edges, color_orig, blank_orig= do_hough_straightline(image, edges, lane_angle=lane_angle, n_lines=2, max_area=5, plot=False)
+    # color_edges, color_orig, blank_orig= do_hough_straightline(image, edges, lane_angle=lane_angle, n_lines=2, max_area=5, plot=False)
+    color_edges, color_orig, blank_orig = do_hough_opencv(image, edges, lane_angle=lane_angle, n_lines=2)
     color_edges = cv2.cvtColor(np.float32(color_edges), cv2.COLOR_BGR2RGB)
     return color_edges
 
